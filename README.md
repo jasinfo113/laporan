@@ -1,6 +1,6 @@
-﻿# E-Kinerja IT
+﻿# E-Laporan Tenaga Ahli (ELTA)
 
-Sistem pelaporan kinerja harian tenaga ahli (PJLP) Disgulkarmat Provinsi DKI Jakarta.
+Sistem pelaporan kinerja harian tenaga ahli Disgulkarmat Provinsi DKI Jakarta.
 
 ![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
@@ -9,7 +9,7 @@ Sistem pelaporan kinerja harian tenaga ahli (PJLP) Disgulkarmat Provinsi DKI Jak
 
 ## Deskripsi
 
-**E-Kinerja IT** adalah aplikasi HRIS mini untuk mengelola:
+**E-Laporan Tenaga Ahli (ELTA)** adalah aplikasi yang digunakan untuk mengelola:
 
 - Pencatatan kegiatan harian
 - Manajemen kontrak kerja
@@ -20,7 +20,7 @@ Sistem pelaporan kinerja harian tenaga ahli (PJLP) Disgulkarmat Provinsi DKI Jak
 
 - Auto-generate laporan Word lengkap dengan data aktivitas
 - Role-based access (`Admin` dan `Pegawai`)
-- Riwayat kontrak multi-tahap
+- Riwayat kontrak
 - Kalkulasi cuti terintegrasi dengan laporan
 - Dashboard interaktif berbasis Chart.js
 - UI responsif (mobile dan desktop)
@@ -69,7 +69,7 @@ Pastikan environment sudah memiliki:
 
 ```bash
 git clone https://github.com/jasinfo113/laporan.git
-cd e-kinerja-it
+cd laporan
 ```
 
 2. Install dependensi
@@ -126,5 +126,6 @@ Akses aplikasi di `http://localhost:8000`.
 
 ## Pengembang
 
-**Rizvan Primadita, S.T.**  
+**Rizvan Primadita** ![Static Badge](https://img.shields.io/badge/my_github-da2724?style=for-the-badge&logo=git&logoColor=299bd3&link=https%3A%2F%2Fgithub.com%2Fr12van)
+
 Tenaga Ahli Web Programmer - Disgulkarmat Provinsi DKI Jakarta
