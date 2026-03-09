@@ -34,21 +34,15 @@
                     </div>
                     <div class="mb-4 md:col-span-2">
                         <label class="block font-bold mb-1">Tujuan Pekerjaan</label>
-                        <textarea name="tujuan" rows="3" class="border rounded w-full py-2 px-3" placeholder="Contoh: Mengembangkan sistem informasi internal...">
-                            {{ $contract->tujuan }}
-                        </textarea>
+                        <textarea name="tujuan" rows="3" class="border rounded w-full py-2 px-3" placeholder="Contoh: Mengembangkan sistem informasi internal...">{{ $contract->tujuan }}</textarea>
                     </div>
                     <div class="mb-4 md:col-span-2">
                         <label class="block font-bold mb-1">Sasaran Pekerjaan</label>
-                        <textarea name="sasaran" rows="3" class="border rounded w-full py-2 px-3" placeholder="Contoh: Terciptanya aplikasi pelaporan yang efisien...">
-                            {{ $contract->sasaran }}
-                        </textarea>
+                        <textarea name="sasaran" rows="3" class="border rounded w-full py-2 px-3" placeholder="Contoh: Terciptanya aplikasi pelaporan yang efisien...">{{ $contract->sasaran }}</textarea>
                     </div>
                     <div class="mb-4 md:col-span-2">
                         <label class="block font-bold mb-1">Ruang Lingkup Pekerjaan</label>
-                        <textarea name="ruang_lingkup" rows="3" class="border rounded w-full py-2 px-3" placeholder="Contoh: Pengembangan modul pelaporan, integrasi dengan sistem lain...">
-                            {{ $contract->ruang_lingkup }}
-                        </textarea>
+                        <textarea name="ruang_lingkup" rows="3" class="border rounded w-full py-2 px-3" placeholder="Contoh: Pengembangan modul pelaporan, integrasi dengan sistem lain...">{{ $contract->ruang_lingkup }}</textarea>
                     </div>
                     <div class="mb-4">
                         <label class="block font-bold mb-1">Tanggal Mulai</label>

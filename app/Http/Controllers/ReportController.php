@@ -131,13 +131,35 @@ class ReportController extends Controller
             $template->setValue('jabatan', $kontrak->jabatan);
             $template->setValue('nama_kontrak', $kontrak->nama_kontrak);
 
-            $teksTujuan = str_replace("\n", '</w:t><w:br/><w:t>', $kontrak->tujuan ?? '-');
-            $teksSasaran = str_replace("\n", '</w:t><w:br/><w:t>', $kontrak->sasaran ?? '-');
-            $teksRuangLingkup = str_replace("\n", '</w:t><w:br/><w:t>', $kontrak->ruang_lingkup ?? '-');
+            // --- JURUS BARU: Parsing Teks ke Array Block buat Numbering ---
+            $siapinListWord = function($teks, $variabelTeks) {
+                $baris = explode("\n", $teks ?? '-');
+                $hasil = [];
 
-            $template->setValue('tujuan', $teksTujuan);
-            $template->setValue('sasaran', $teksSasaran);
-            $template->setValue('ruang_lingkup', $teksRuangLingkup);
+                foreach ($baris as $b) {
+                    $bersih = trim($b);
+                    if (!empty($bersih)) {
+                        // Cerdas: Hapus angka "1. ", "2. " atau strip "- " dari ketikan Admin
+                        // Biar nggak bentrok/dobel sama auto-numbering dari Ms. Word
+                        $bersih = preg_replace('/^(\d+\.|\-)\s*/', '', $bersih);
+                        $hasil[] = [$variabelTeks => $bersih];
+                    }
+                }
+
+                // Kalau admin ngosongin isiannya
+                if (empty($hasil)) {
+                    $hasil[] = [$variabelTeks => '-'];
+                }
+
+                return $hasil;
+            };
+
+            // Lempar ke Word pakai cloneBlock (Bukan setComplexValue lagi)
+            // Format parameter: cloneBlock(nama_blok, jumlah_clone (0=otomatis), replace, indexVariables, array_data)
+            $template->cloneBlock('block_tujuan', 0, true, false, $siapinListWord($kontrak->tujuan, 'teks_tujuan'));
+            $template->cloneBlock('block_sasaran', 0, true, false, $siapinListWord($kontrak->sasaran, 'teks_sasaran'));
+            $template->cloneBlock('block_ruang_lingkup', 0, true, false, $siapinListWord($kontrak->ruang_lingkup, 'teks_ruang_lingkup'));
+
 
             $approver = $kontrak->jobPackage ? $kontrak->jobPackage->approver : null;
             $template->setValue('nama_pejabat', $approver ? $approver->nama : 'Belum Diset');
@@ -189,20 +211,24 @@ class ReportController extends Controller
                     $hari = Carbon::parse($task->tanggal)->locale('id')->isoFormat('dddd');
                     $tanggal = Carbon::parse($task->tanggal)->format('d M Y');
                     $keterangan = $task->scope ? $task->scope->kode_aktivitas : '-';
-
-                    $template->setValue('hari#' . $rowNum, $hari);
-                    $template->setValue('tanggal#' . $rowNum, $tanggal);
-
                     $deskripsi = $task->deskripsi_pekerjaan;
-                    // 1. Cek apakah ada kata cuti/libur (Cukup pakai !== false)
+
                     if (stripos($deskripsi, 'cuti') !== false || stripos($deskripsi, 'libur') !== false) {
-                        // 2. Buat objek TextRun untuk manipulasi gaya tulisan (Style)
-                        $textRun = new TextRun();
-                        $textRun->addText($deskripsi, ['bold' => true, 'color' => 'FF0000']); // Warna merah
-                        // 3. Masukkan ke template pakai setComplexValue (BUKAN setValue)
-                        $template->setComplexValue('deskripsi#' . $rowNum, $textRun);
+
+                        $textHari = new TextRun();
+                        $textTanggal = new TextRun();
+                        $textDeskripsi = new TextRun();
+
+                        $textHari->addText($hari, ['bold' => true, 'color' => 'FF0000']); // Warna merah
+                        $textTanggal->addText($tanggal, ['bold' => true, 'color' => 'FF0000']); // Warna merah
+                        $textDeskripsi->addText($deskripsi, ['bold' => true, 'color' => 'FF0000']); // Warna merah
+
+                        $template->setComplexValue('hari#' . $rowNum, $textHari);
+                        $template->setComplexValue('tanggal#' . $rowNum, $textTanggal);
+                        $template->setComplexValue('deskripsi#' . $rowNum, $textDeskripsi);
                     } else {
-                        // Kalau tulisan normal, pakai setValue biasa
+                        $template->setValue('hari#' . $rowNum, $hari);
+                        $template->setValue('tanggal#' . $rowNum, $tanggal);
                         $template->setValue('deskripsi#' . $rowNum, $deskripsi);
                     }
 
