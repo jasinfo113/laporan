@@ -40,4 +40,28 @@ class DailyTaskController extends Controller
 
         return back()->with('success', 'Kegiatan berhasil ditambahkan!');
     }
+
+    public function destroy($id)
+    {
+        // Panggil task beserta relasi foto dan laporannya
+        $task = \App\Models\DailyTask::with(['taskImages', 'report'])->findOrFail($id);
+
+        // Validasi keamanan: Pastikan hanya yang punya laporan yang bisa hapus
+        if ($task->report->user_id !== \Illuminate\Support\Facades\Auth::id()) {
+            abort(403, 'Ente kadang-kadang! Ini bukan laporan lu bray.');
+        }
+
+        // Hapus fisik foto dari server (Looping semua foto milik task ini)
+        foreach ($task->taskImages as $image) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($image->image_path);
+        }
+
+        // Hapus data foto dari database
+        $task->taskImages()->delete();
+
+        // Hapus data kegiatannya
+        $task->delete();
+
+        return back()->with('success', 'Kegiatan dan foto bukti berhasil dihapus!');
+    }
 }

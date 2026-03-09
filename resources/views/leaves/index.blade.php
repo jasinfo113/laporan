@@ -31,18 +31,23 @@
             </div>
         </div>
 
+        @if(Auth::user()->role !== 'admin')
         <div class="mb-4 flex justify-end">
             <a href="{{ route('leaves.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-lg shadow-sm transition-colors flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Ajukan Cuti Baru
             </a>
         </div>
+        @endif
 
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 text-gray-900 overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-200">
+                            @if(Auth::user()->role === 'admin')
+                                <th class="px-4 py-3 font-bold text-gray-600">Nama Pegawai</th>
+                            @endif
                             <th class="px-4 py-3 font-bold text-gray-600">Tanggal Cuti</th>
                             <th class="px-4 py-3 font-bold text-gray-600">Keterangan</th>
                             <th class="px-4 py-3 font-bold text-gray-600 w-24">Aksi</th>
@@ -51,10 +56,14 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse($leaves as $leave)
                         <tr class="hover:bg-gray-50 transition-colors">
+                            @if(Auth::user()->role === 'admin')
+                                <td class="px-4 py-3 text-gray-800 font-semibold">{{ $leave->user->name ?? 'Tidak Diketahui' }}</td>
+                            @endif
+
                             <td class="px-4 py-3 font-semibold text-gray-800">{{ \Carbon\Carbon::parse($leave->tanggal_cuti)->locale('id')->isoFormat('dddd, D MMMM Y') }}</td>
                             <td class="px-4 py-3 text-gray-600">{{ $leave->keterangan }}</td>
                             <td class="px-4 py-3">
-                                <form action="{{ route('leaves.destroy', $leave->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan cuti ini? Saldo cuti akan dikembalikan.');">
+                                <form action="{{ route('leaves.destroy', $leave->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan/menghapus cuti ini?');">
                                     @csrf @method('DELETE')
                                     <button class="text-red-500 hover:text-red-700 font-bold text-sm bg-red-50 hover:bg-red-100 py-1.5 px-3 rounded transition-colors">Batal</button>
                                 </form>
@@ -62,7 +71,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="3" class="px-4 py-8 text-center text-gray-400">Belum ada riwayat pengajuan cuti.</td>
+                            <td colspan="{{ Auth::user()->role === 'admin' ? '4' : '3' }}" class="px-4 py-8 text-center text-gray-400">Belum ada riwayat pengajuan cuti.</td>
                         </tr>
                         @endforelse
                     </tbody>

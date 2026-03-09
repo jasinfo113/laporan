@@ -15,15 +15,24 @@ class LeaveController extends Controller
         $user = Auth::user();
         $tahunSekarang = date('Y');
 
-        // Hitung sisa cuti untuk ditampilkan di form
-        $totalJatahCuti = $user->contracts()->whereYear('tanggal_mulai', $tahunSekarang)->sum('kuota_cuti');
-        $cutiTerpakai = $user->leaves()->whereYear('tanggal_cuti', $tahunSekarang)->count();
-        $sisaCuti = $totalJatahCuti - $cutiTerpakai;
+        // Jika yang login ADMIN: Tampilkan SEMUA data cuti
+        if ($user->role === 'admin') {
+            $leaves = Leave::with('user') // Ambil relasi user biar bisa nampilin nama
+                           ->orderBy('tanggal_cuti', 'desc')
+                           ->get();
+            $sisaCuti = null; // Admin gak butuh sisa cuti di halaman ini
+        }
+        // Jika yang login PEGAWAI: Tampilkan HANYA data miliknya
+        else {
+            $totalJatahCuti = $user->contracts()->whereYear('tanggal_mulai', $tahunSekarang)->sum('kuota_cuti');
+            $cutiTerpakai = $user->leaves()->whereYear('tanggal_cuti', $tahunSekarang)->count();
+            $sisaCuti = $totalJatahCuti - $cutiTerpakai;
 
-        // Tampilkan daftar cuti milik user yang sedang login, urutkan dari yang terbaru
-        $leaves = Leave::where('user_id', $user->id)
-                       ->orderBy('tanggal_cuti', 'desc')
-                       ->get();
+            $leaves = Leave::where('user_id', $user->id)
+                           ->orderBy('tanggal_cuti', 'desc')
+                           ->get();
+        }
+
         return view('leaves.index', compact('leaves', 'sisaCuti', 'tahunSekarang'));
     }
 
@@ -111,11 +120,13 @@ class LeaveController extends Controller
 
     public function destroy(Leave $leaf)
     {
-        // Pastikan hanya pemiliknya yang bisa batalin cuti
-        if ($leaf->user_id !== Auth::id()) {
-            abort(403);
+        // Pastikan hanya pemiliknya ATAU ADMIN yang bisa batalin cuti
+        if ($leaf->user_id !== Auth::id() && Auth::user()->role !== 'admin') {
+            abort(403, 'Akses ditolak.');
         }
+
         $leaf->delete();
-        return redirect()->route('leaves.index')->with('success', 'Pengajuan cuti berhasil dibatalkan.');
+
+        return redirect()->route('leaves.index')->with('success', 'Data cuti berhasil dibatalkan/dihapus.');
     }
 }

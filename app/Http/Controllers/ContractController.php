@@ -38,6 +38,9 @@ class ContractController extends Controller
             'job_package_id' => 'required|exists:job_packages,id',
             'nama_kontrak' => 'required|string',
             'jabatan' => 'required|string',
+            'tujuan' => 'nullable|string',
+            'sasaran' => 'nullable|string',
+            'ruang_lingkup' => 'nullable|string',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'kuota_cuti' => 'required|integer|min:0'
@@ -60,9 +63,9 @@ class ContractController extends Controller
      */
     public function edit(Contract $contract)
     {
-        $contract->load('contract', 'jobPackage');
-        $users = User::where('role', 'pegawai')->get();
-        $packages = JobPackage::all();
+        $users = \App\Models\User::where('role', 'pegawai')->get();
+        $packages = \App\Models\JobPackage::all();
+
         return view('contracts.edit', compact('contract', 'users', 'packages'));
     }
 
@@ -76,6 +79,9 @@ class ContractController extends Controller
             'job_package_id' => 'required|exists:job_packages,id',
             'nama_kontrak' => 'required|string',
             'jabatan' => 'required|string',
+            'tujuan' => 'nullable|string',
+            'sasaran' => 'nullable|string',
+            'ruang_lingkup' => 'nullable|string',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'kuota_cuti' => 'required|integer|min:0'

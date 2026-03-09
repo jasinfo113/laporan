@@ -7,12 +7,36 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Report;
 use App\Models\DailyTask;
 use Carbon\Carbon;
+use App\Models\Contract;
+use App\Models\Leave;
+use App\Models\User;
 
 class DashboardController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
+
+        if ($user->role === 'admin') {
+            $bulanIni = Carbon::now()->month;
+            $tahunIni = Carbon::now()->year;
+            $hariIni = Carbon::today();
+
+            $data = [
+                'totalPegawai' => User::where('role', 'pegawai')->count(),
+                'kontrakAktif' => Contract::whereDate('tanggal_mulai', '<=', $hariIni)
+                                          ->whereDate('tanggal_selesai', '>=', $hariIni)
+                                          ->count(),
+                'laporanBulanIni' => Report::where('bulan', $bulanIni)->where('tahun', $tahunIni)->count(),
+                'cutiHariIni' => Leave::whereDate('tanggal_cuti', $hariIni)->count(),
+                'pegawaiCuti' => Leave::with('user')->whereDate('tanggal_cuti', '>=', $hariIni)
+                                          ->orderBy('tanggal_cuti', 'asc')
+                                          ->take(5)->get(),
+            ];
+
+            return view('dashboard-admin', $data);
+        }
+
         $bulanSekarang = date('n');
         $tahunSekarang = date('Y');
 
@@ -29,12 +53,10 @@ class DashboardController extends Controller
         $targetAktivitas = $activeContract && $activeContract->jobPackage ? $activeContract->jobPackage->scopes()->count() : 0;
 
         // 3. LOGIKA KALKULATOR CUTI (Tahun Berjalan)
-        // Hitung total jatah cuti dari SEMUA kontrak di tahun ini
         $totalJatahCuti = $user->contracts()
                                ->whereYear('tanggal_mulai', $tahunSekarang)
                                ->sum('kuota_cuti');
 
-        // Hitung cuti yang sudah diambil di tahun ini
         $cutiTerpakai = $user->leaves()
                              ->whereYear('tanggal_cuti', $tahunSekarang)
                              ->count();

@@ -32,6 +32,24 @@
                         <label class="block font-bold mb-1">Jabatan Kontrak</label>
                         <input type="text" name="jabatan" value="{{ $contract->jabatan }}" class="border rounded w-full py-2 px-3" required>
                     </div>
+                    <div class="mb-4 md:col-span-2">
+                        <label class="block font-bold mb-1">Tujuan Pekerjaan</label>
+                        <textarea name="tujuan" rows="3" class="border rounded w-full py-2 px-3" placeholder="Contoh: Mengembangkan sistem informasi internal...">
+                            {{ $contract->tujuan }}
+                        </textarea>
+                    </div>
+                    <div class="mb-4 md:col-span-2">
+                        <label class="block font-bold mb-1">Sasaran Pekerjaan</label>
+                        <textarea name="sasaran" rows="3" class="border rounded w-full py-2 px-3" placeholder="Contoh: Terciptanya aplikasi pelaporan yang efisien...">
+                            {{ $contract->sasaran }}
+                        </textarea>
+                    </div>
+                    <div class="mb-4 md:col-span-2">
+                        <label class="block font-bold mb-1">Ruang Lingkup Pekerjaan</label>
+                        <textarea name="ruang_lingkup" rows="3" class="border rounded w-full py-2 px-3" placeholder="Contoh: Pengembangan modul pelaporan, integrasi dengan sistem lain...">
+                            {{ $contract->ruang_lingkup }}
+                        </textarea>
+                    </div>
                     <div class="mb-4">
                         <label class="block font-bold mb-1">Tanggal Mulai</label>
                         <input type="date" name="tanggal_mulai" value="{{ $contract->tanggal_mulai }}" class="border rounded w-full py-2 px-3" required>

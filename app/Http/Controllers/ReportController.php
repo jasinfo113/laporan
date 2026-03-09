@@ -131,6 +131,14 @@ class ReportController extends Controller
             $template->setValue('jabatan', $kontrak->jabatan);
             $template->setValue('nama_kontrak', $kontrak->nama_kontrak);
 
+            $teksTujuan = str_replace("\n", '</w:t><w:br/><w:t>', $kontrak->tujuan ?? '-');
+            $teksSasaran = str_replace("\n", '</w:t><w:br/><w:t>', $kontrak->sasaran ?? '-');
+            $teksRuangLingkup = str_replace("\n", '</w:t><w:br/><w:t>', $kontrak->ruang_lingkup ?? '-');
+
+            $template->setValue('tujuan', $teksTujuan);
+            $template->setValue('sasaran', $teksSasaran);
+            $template->setValue('ruang_lingkup', $teksRuangLingkup);
+
             $approver = $kontrak->jobPackage ? $kontrak->jobPackage->approver : null;
             $template->setValue('nama_pejabat', $approver ? $approver->nama : 'Belum Diset');
             $template->setValue('nip_pejabat', $approver ? $approver->nip : '-');
