@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpWord\TemplateProcessor;
 use PhpOffice\PhpWord\Settings;
+use PhpOffice\PhpWord\Element\TextRun;
 use Carbon\Carbon;
 
 class ReportController extends Controller
