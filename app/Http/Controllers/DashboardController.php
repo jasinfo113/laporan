@@ -31,7 +31,7 @@ class DashboardController extends Controller
                 'cutiHariIni' => Leave::whereDate('tanggal_cuti', $hariIni)->count(),
                 'pegawaiCuti' => Leave::with('user')->whereDate('tanggal_cuti', '>=', $hariIni)
                                           ->orderBy('tanggal_cuti', 'asc')
-                                          ->take(5)->get(),
+                                          ->paginate(5),
             ];
 
             return view('dashboard-admin', $data);

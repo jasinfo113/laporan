@@ -15,7 +15,7 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-12" x-data="{ imageModalOpen: false, activeImage: '', activeCaption: '' }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             @if(session('success'))
@@ -79,7 +79,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($report->dailyTasks->sortBy('tanggal') as $task)
+                                @forelse($dailyTasks as $task)
                                     <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                         <td class="border px-4 py-2 dark:border-gray-700">{{ \Carbon\Carbon::parse($task->tanggal)->format('d M Y') }}</td>
                                         <td class="border px-4 py-2 dark:border-gray-700">{{ $task->scope ? $task->scope->kode_aktivitas : '-' }}</td>
@@ -88,9 +88,17 @@
                                             @if($task->taskImages->count() > 0)
                                                 <div class="flex gap-2">
                                                     @foreach($task->taskImages as $image)
-                                                        <a href="{{ asset('storage/' . $image->image_path) }}" target="_blank">
-                                                            <img src="{{ asset('storage/' . $image->image_path) }}" class="h-12 w-12 object-cover rounded border">
-                                                        </a>
+                                                        <button
+                                                            type="button"
+                                                            @click="
+                                                                activeImage = '{{ asset('storage/' . $image->image_path) }}';
+                                                                activeCaption = '{{ addslashes($task->deskripsi_pekerjaan) }}';
+                                                                imageModalOpen = true;
+                                                            "
+                                                            class="focus:outline-none"
+                                                        >
+                                                            <img src="{{ asset('storage/' . $image->image_path) }}" class="h-12 w-12 object-cover rounded border hover:opacity-90 transition" alt="Bukti kegiatan">
+                                                        </button>
                                                     @endforeach
                                                 </div>
                                             @else
@@ -101,9 +109,17 @@
                                             <form action="{{ route('tasks.destroy', $task->id) }}" method="POST" onsubmit="return confirm('Yakin mau hapus kegiatan ini beserta fotonya?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-500 hover:text-red-700 font-bold text-sm bg-red-50 hover:bg-red-100 py-1.5 px-3 rounded transition-colors">
-                                                    Hapus
-                                                </button>
+                                                <x-icon-action
+                                                    as="button"
+                                                    type="submit"
+                                                    color="red"
+                                                    tooltip="Hapus"
+                                                    tooltip-id="tt-task-delete-{{ $task->id }}"
+                                                >
+                                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5h6v2m-7 4v6m4-6v6m4-10v12a1 1 0 01-1 1H9a1 1 0 01-1-1V7h8z"/>
+                                                    </svg>
+                                                </x-icon-action>
                                             </form>
                                         </td>
                                     </tr>
@@ -114,7 +130,32 @@
                                 @endforelse
                             </tbody>
                         </table>
+
+                        {{ $dailyTasks->links('components.flowbite-pagination') }}
                     </div>
+                </div>
+            </div>
+
+            <div
+                x-show="imageModalOpen"
+                x-transition.opacity
+                x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+                @click.self="imageModalOpen = false"
+                @keydown.escape.window="imageModalOpen = false"
+            >
+                <div class="relative w-full max-w-4xl">
+                    <button
+                        type="button"
+                        class="absolute -top-10 right-0 rounded-md bg-white/10 px-3 py-1 text-sm text-white hover:bg-white/20"
+                        @click="imageModalOpen = false"
+                    >
+                        Tutup
+                    </button>
+
+                    <img :src="activeImage" alt="Preview bukti kegiatan" class="max-h-[80vh] w-full rounded-lg object-contain">
+
+                    <p class="mt-3 text-center text-sm text-gray-200" x-text="activeCaption"></p>
                 </div>
             </div>
 

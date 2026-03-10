@@ -57,15 +57,25 @@
                         @forelse($leaves as $leave)
                         <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40">
                             @if(Auth::user()->role === 'admin')
-                                <td class="px-4 py-3 text-gray-800 font-semibold">{{ $leave->user->name ?? 'Tidak Diketahui' }}</td>
+                                <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">{{ $leave->user->name ?? 'Tidak Diketahui' }}</td>
                             @endif
 
-                            <td class="px-4 py-3 font-semibold text-gray-800">{{ \Carbon\Carbon::parse($leave->tanggal_cuti)->locale('id')->isoFormat('dddd, D MMMM Y') }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ $leave->keterangan }}</td>
+                            <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">{{ \Carbon\Carbon::parse($leave->tanggal_cuti)->locale('id')->isoFormat('dddd, D MMMM Y') }}</td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $leave->keterangan }}</td>
                             <td class="px-4 py-3">
                                 <form action="{{ route('leaves.destroy', $leave->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan/menghapus cuti ini?');">
                                     @csrf @method('DELETE')
-                                    <button class="text-red-500 hover:text-red-700 font-bold text-sm bg-red-50 hover:bg-red-100 py-1.5 px-3 rounded transition-colors">Batal</button>
+                                    <x-icon-action
+                                        as="button"
+                                        type="submit"
+                                        color="red"
+                                        tooltip="Batal"
+                                        tooltip-id="tt-leave-cancel-{{ $leave->id }}"
+                                    >
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </x-icon-action>
                                 </form>
                             </td>
                         </tr>
@@ -76,6 +86,8 @@
                         @endforelse
                     </tbody>
                 </table>
+
+                {{ $leaves->links('components.flowbite-pagination') }}
             </div>
         </div>
     </div></div>

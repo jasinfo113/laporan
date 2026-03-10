@@ -3,16 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Report;
-use App\Models\Approver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Scope;
-use PhpOffice\PhpWord\PhpWord;
-use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\TemplateProcessor;
 use PhpOffice\PhpWord\Settings;
-use PhpOffice\PhpWord\Style\Font;
-use PhpOffice\PhpWord\Element\TextRun;
 use Carbon\Carbon;
 
 class ReportController extends Controller
@@ -23,7 +17,7 @@ class ReportController extends Controller
         $reports = Report::where('user_id', Auth::id())
                         ->orderBy('tahun', 'desc')
                         ->orderBy('bulan', 'desc')
-                        ->get();
+                        ->paginate(10);
         return view('reports.index', compact('reports'));
     }
 
@@ -78,12 +72,17 @@ class ReportController extends Controller
             abort(403);
         }
 
-        $report->load(['contract.jobPackage', 'dailyTasks.scope', 'dailyTasks.taskImages']);
+        $report->load(['contract.jobPackage']);
 
         // Scopes diambil dari Kontrak, bukan dari User lagi
         $scopes = $report->contract && $report->contract->jobPackage ? $report->contract->jobPackage->scopes : collect();
 
-        return view('reports.show', compact('report', 'scopes'));
+        $dailyTasks = $report->dailyTasks()
+            ->with(['scope', 'taskImages'])
+            ->orderBy('tanggal')
+            ->paginate(10);
+
+        return view('reports.show', compact('report', 'scopes', 'dailyTasks'));
     }
 
     public function exportWord(Report $report)

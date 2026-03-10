@@ -29,7 +29,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($packages as $package)
+                            @forelse($packages as $package)
                                 <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                     <td class="border-b py-2 px-4 font-semibold dark:border-gray-700">{{ $package->nama_paket }}</td>
                                     <td class="border-b py-2 px-4 text-center dark:border-gray-700">
@@ -37,17 +37,43 @@
                                     </td>
                                     <td class="border-b py-2 px-4 text-center dark:border-gray-700">
                                         <div class="flex justify-center gap-2">
-                                            <a href="{{ route('job_packages.edit', $package->id) }}" class="font-bold text-yellow-600 hover:underline dark:text-yellow-400">Detail/Edit</a>
+                                            <x-icon-action
+                                                as="a"
+                                                :href="route('job_packages.edit', $package->id)"
+                                                color="blue"
+                                                tooltip="Detail / Edit"
+                                                tooltip-id="tt-jp-edit-{{ $package->id }}"
+                                            >
+                                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h2M5 19h14M7 16l9-9 2 2-9 9H7v-2z"/>
+                                                </svg>
+                                            </x-icon-action>
                                             <form action="{{ route('job_packages.destroy', $package->id) }}" method="POST" onsubmit="return confirm('Yakin hapus paket ini?');">
                                                 @csrf @method('DELETE')
-                                                <button type="submit" class="font-bold text-red-600 hover:underline dark:text-red-400">Hapus</button>
+                                                <x-icon-action
+                                                    as="button"
+                                                    type="submit"
+                                                    color="red"
+                                                    tooltip="Hapus"
+                                                    tooltip-id="tt-jp-delete-{{ $package->id }}"
+                                                >
+                                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5h6v2m-7 4v6m4-6v6m4-10v12a1 1 0 01-1 1H9a1 1 0 01-1-1V7h8z"/>
+                                                    </svg>
+                                                </x-icon-action>
                                             </form>
                                         </div>
                                     </td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="border-b py-4 px-4 text-center text-gray-500 dark:border-gray-700 dark:text-gray-400">Belum ada paket pekerjaan.</td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
+
+                    {{ $packages->links('components.flowbite-pagination') }}
                 </div>
             </div>
         </div>

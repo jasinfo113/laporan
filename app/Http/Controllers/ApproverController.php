@@ -9,7 +9,7 @@ class ApproverController extends Controller
 {
     public function index()
     {
-        $approvers = Approver::all();
+        $approvers = Approver::orderBy('nama')->paginate(10);
         return view('approvers.index', compact('approvers'));
     }
 

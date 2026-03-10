@@ -12,7 +12,9 @@ class JobPackageController extends Controller
     public function index()
     {
         // Ambil data paket pekerjaan beserta jumlah aktivitasnya
-        $packages = JobPackage::withCount('scopes')->get();
+        $packages = JobPackage::withCount('scopes')
+            ->orderBy('nama_paket')
+            ->paginate(10);
         return view('job_packages.index', compact('packages'));
     }
 

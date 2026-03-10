@@ -19,7 +19,7 @@ class LeaveController extends Controller
         if ($user->role === 'admin') {
             $leaves = Leave::with('user') // Ambil relasi user biar bisa nampilin nama
                            ->orderBy('tanggal_cuti', 'desc')
-                           ->get();
+                           ->paginate(10);
             $sisaCuti = null; // Admin gak butuh sisa cuti di halaman ini
         }
         // Jika yang login PEGAWAI: Tampilkan HANYA data miliknya
@@ -30,7 +30,7 @@ class LeaveController extends Controller
 
             $leaves = Leave::where('user_id', $user->id)
                            ->orderBy('tanggal_cuti', 'desc')
-                           ->get();
+                           ->paginate(10);
         }
 
         return view('leaves.index', compact('leaves', 'sisaCuti', 'tahunSekarang'));

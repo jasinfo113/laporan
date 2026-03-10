@@ -14,7 +14,9 @@ class ContractController extends Controller
      */
     public function index()
     {
-        $contracts = Contract::with(['user', 'jobPackage'])->orderBy('tanggal_mulai', 'desc')->get();
+        $contracts = Contract::with(['user', 'jobPackage'])
+            ->orderBy('tanggal_mulai', 'desc')
+            ->paginate(10);
         return view('contracts.index', compact('contracts'));
     }
 

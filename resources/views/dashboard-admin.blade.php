@@ -91,6 +91,10 @@
                             @endforelse
                         </tbody>
                     </table>
+
+                    <div class="px-6 pb-4">
+                        {{ $pegawaiCuti->links('components.flowbite-pagination') }}
+                    </div>
                 </div>
             </div>
 

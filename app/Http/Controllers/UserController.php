@@ -10,8 +10,10 @@ class UserController extends Controller
 {
     public function index()
     {
-        // Tampilkan semua user
-        $users = User::all();
+        // Tampilkan user dengan pagination
+        $users = User::with(['jobPackage.scopes'])
+            ->orderBy('name')
+            ->paginate(10);
         return view('users.index', compact('users'));
     }
 
