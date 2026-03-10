@@ -9,25 +9,50 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="antialiased font-sans bg-gray-50 text-gray-900">
 
-    <nav class="bg-white/80 backdrop-blur-md fixed w-full z-50 border-b border-gray-100 transition-all">
+    <script>
+        (() => {
+            try {
+                const theme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (theme === 'dark' || (!theme && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+</head>
+<body class="bg-gray-50 font-sans antialiased text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+
+    <nav class="fixed z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md transition-all dark:border-gray-700 dark:bg-gray-900/80">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex-shrink-0 flex items-center gap-2">
                     <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-200">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </div>
-                    <span class="font-bold text-xl tracking-tight text-gray-800 hidden sm:block">eLTA <span class="text-blue-600">elektronik Laporan Tenaga Ahli</span></span>
+                    <span class="hidden text-xl font-bold tracking-tight text-gray-800 dark:text-gray-100 sm:block">eLTA <span class="text-blue-600 dark:text-blue-400">elektronik Laporan Tenaga Ahli</span></span>
                 </div>
 
                 <div class="flex items-center gap-4">
+                    <button type="button" data-theme-toggle class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-gray-700">
+                        <svg data-theme-toggle-icon-dark class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 2a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Zm4 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm-.464 4.95.707.707a1 1 0 0 1-1.414 1.414l-.707-.707a1 1 0 0 1 1.414-1.414Zm2.12-10.607a1 1 0 0 0-1.414 0l-.707.707a1 1 0 0 0 1.414 1.414l.707-.707a1 1 0 0 0 0-1.414ZM17 11a1 1 0 1 1 0-2h1a1 1 0 1 1 0 2h-1Zm-7 6a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1Zm-4.95-2.464a1 1 0 0 0 0 1.414l-.707.707a1 1 0 0 0 1.414 1.414l.707-.707a1 1 0 0 0-1.414-1.414ZM4 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm.343-5.657a1 1 0 0 1 1.414 0l.707.707A1 1 0 0 1 5.05 6.464l-.707-.707a1 1 0 0 1 0-1.414Z"/>
+                        </svg>
+                        <svg data-theme-toggle-icon-light class="hidden h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 20">
+                            <path d="M17.293 13.293A8 8 0 0 1 6.707 2.707a8.001 8.001 0 1 0 10.586 10.586Z"/>
+                        </svg>
+                    </button>
+
                     @if (Route::has('login'))
                         @auth
-                            <a href="{{ url('/dashboard') }}" class="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Ke Dashboard &rarr;</a>
+                            <a href="{{ url('/dashboard') }}" class="text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400">Ke Dashboard &rarr;</a>
                         @else
-                            <a href="{{ route('login') }}" class="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Log in</a>
+                            <a href="{{ route('login') }}" class="text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400">Log in</a>
                             @endauth
                     @endif
                 </div>
@@ -41,11 +66,11 @@
         </div>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
+            <h1 class="mb-6 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 md:text-5xl lg:text-6xl">
                 Sistem Pelaporan Kinerja <br class="hidden lg:block" />
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-500">Tenaga Ahli</span>
             </h1>
-            <p class="mt-4 max-w-2xl text-lg md:text-xl text-gray-500 mx-auto mb-10">
+            <p class="mx-auto mb-10 mt-4 max-w-2xl text-lg text-gray-500 dark:text-gray-300 md:text-xl">
                 Catat aktivitas harian, pantau produktivitas, dan cetak dokumen laporan bulanan secara otomatis dengan format Microsoft Word sesuai standar instansi.
             </p>
 
@@ -65,42 +90,42 @@
         </div>
     </div>
 
-    <div class="bg-white py-20 border-t border-gray-100">
+    <div class="border-t border-gray-100 bg-white py-20 dark:border-gray-700 dark:bg-gray-900">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-gray-900">Kenapa Menggunakan eLTA?</h2>
-                <p class="mt-4 text-gray-500">Didesain khusus untuk menyederhanakan administrasi laporan teknis.</p>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Kenapa Menggunakan eLTA?</h2>
+                <p class="mt-4 text-gray-500 dark:text-gray-300">Didesain khusus untuk menyederhanakan administrasi laporan teknis.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:shadow-lg transition-shadow">
+                <div class="rounded-2xl border border-gray-100 bg-gray-50 p-6 transition-shadow hover:shadow-lg dark:border-gray-700 dark:bg-gray-800">
                     <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-6">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Input Harian Cepat</h3>
-                    <p class="text-gray-500 leading-relaxed">Pencatatan kegiatan harian berbasis scope pekerjaan. Tersedia fitur upload bukti dokumentasi kegiatan langsung dari sistem.</p>
+                    <h3 class="mb-3 text-xl font-bold text-gray-900 dark:text-gray-100">Input Harian Cepat</h3>
+                    <p class="leading-relaxed text-gray-500 dark:text-gray-300">Pencatatan kegiatan harian berbasis scope pekerjaan. Tersedia fitur upload bukti dokumentasi kegiatan langsung dari sistem.</p>
                 </div>
 
-                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:shadow-lg transition-shadow">
+                <div class="rounded-2xl border border-gray-100 bg-gray-50 p-6 transition-shadow hover:shadow-lg dark:border-gray-700 dark:bg-gray-800">
                     <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 mb-6">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Generate Word Otomatis</h3>
-                    <p class="text-gray-500 leading-relaxed">Tidak perlu lagi copy-paste ke MS Word. Sistem akan otomatis merekap kegiatan dalam format .docx siap cetak dan tandatangan.</p>
+                    <h3 class="mb-3 text-xl font-bold text-gray-900 dark:text-gray-100">Generate Word Otomatis</h3>
+                    <p class="leading-relaxed text-gray-500 dark:text-gray-300">Tidak perlu lagi copy-paste ke MS Word. Sistem akan otomatis merekap kegiatan dalam format .docx siap cetak dan tandatangan.</p>
                 </div>
 
-                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:shadow-lg transition-shadow">
+                <div class="rounded-2xl border border-gray-100 bg-gray-50 p-6 transition-shadow hover:shadow-lg dark:border-gray-700 dark:bg-gray-800">
                     <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 mb-6">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Hak Akses Terpusat</h3>
-                    <p class="text-gray-500 leading-relaxed">Dilengkapi dengan Role-Based Access. Admin mengelola master data dan pegawai fokus pada laporan kinerja masing-masing.</p>
+                    <h3 class="mb-3 text-xl font-bold text-gray-900 dark:text-gray-100">Hak Akses Terpusat</h3>
+                    <p class="leading-relaxed text-gray-500 dark:text-gray-300">Dilengkapi dengan Role-Based Access. Admin mengelola master data dan pegawai fokus pada laporan kinerja masing-masing.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <footer class="bg-white border-t border-gray-200 py-8">
+    <footer class="border-t border-gray-200 bg-white py-8 dark:border-gray-700 dark:bg-gray-900">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-400">
             <p>&copy; {{ date('Y') }} Dinas Penanggulangan Kebakaran dan Penyelamatan Provinsi DKI Jakarta.</p>
             <p class="mt-1">Developed for Internal eLTA Team.</p>

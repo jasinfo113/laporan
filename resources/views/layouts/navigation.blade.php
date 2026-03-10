@@ -1,145 +1,79 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-    <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-                    </a>
+<nav class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+    <div class="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between p-4">
+        <a href="{{ route('dashboard') }}" class="flex items-center space-x-3 rtl:space-x-reverse h-16">
+            <x-application-logo class="h-8 w-8 fill-current text-gray-800 dark:text-gray-100" />
+            {{-- <span class="self-center whitespace-nowrap text-xl font-semibold text-gray-900 dark:text-white">{{ config('app.name', 'Daily Task') }}</span> --}}
+        </a>
+
+        <div class="flex items-center gap-3 md:order-2">
+            <button type="button" data-theme-toggle class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-gray-700">
+                <svg data-theme-toggle-icon-dark class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Zm4 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm-.464 4.95.707.707a1 1 0 0 1-1.414 1.414l-.707-.707a1 1 0 0 1 1.414-1.414Zm2.12-10.607a1 1 0 0 0-1.414 0l-.707.707a1 1 0 0 0 1.414 1.414l.707-.707a1 1 0 0 0 0-1.414ZM17 11a1 1 0 1 1 0-2h1a1 1 0 1 1 0 2h-1Zm-7 6a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1Zm-4.95-2.464a1 1 0 0 0 0 1.414l-.707.707a1 1 0 0 0 1.414 1.414l.707-.707a1 1 0 0 0-1.414-1.414ZM4 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm.343-5.657a1 1 0 0 1 1.414 0l.707.707A1 1 0 0 1 5.05 6.464l-.707-.707a1 1 0 0 1 0-1.414Z"/>
+                </svg>
+                <svg data-theme-toggle-icon-light class="hidden h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 20">
+                    <path d="M17.293 13.293A8 8 0 0 1 6.707 2.707a8.001 8.001 0 1 0 10.586 10.586Z"/>
+                </svg>
+            </button>
+
+            <button id="user-menu-button" data-dropdown-toggle="user-dropdown" type="button" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus:ring-gray-700">
+                <span class="me-2">{{ Auth::user()->name }}</span>
+                <svg class="h-2.5 w-2.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4" />
+                </svg>
+            </button>
+
+            <div id="user-dropdown" class="z-50 hidden w-44 divide-y divide-gray-100 rounded-lg bg-white text-base shadow-sm dark:divide-gray-600 dark:bg-gray-700">
+                <div class="px-4 py-3">
+                    <span class="block truncate text-sm text-gray-500 dark:text-gray-300">{{ Auth::user()->email }}</span>
                 </div>
-
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
-                        Laporan Bulanan
-                    </x-nav-link>
-                    <x-nav-link :href="route('leaves.index')" :active="request()->routeIs('leaves.*')">
-                        Cuti Tahunan
-                    </x-nav-link>
-                    @if(Auth::user()->role === 'admin')
-                    <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                        Master Pegawai
-                    </x-nav-link>
-                    <x-nav-link :href="route('job_packages.index')" :active="request()->routeIs('job_packages.*')">
-                        Master Pekerjaan & Scope
-                    </x-nav-link>
-                    <x-nav-link :href="route('approvers.index')" :active="request()->routeIs('approvers.*')">
-                        Master Pejabat
-                    </x-nav-link>
-                    <x-nav-link :href="route('contracts.index')" :active="request()->routeIs('contracts.*')">
-                        Manajemen Kontrak
-                    </x-nav-link>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
-
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
-
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
-
-                        <!-- Authentication -->
+                <ul class="py-2" aria-labelledby="user-menu-button">
+                    <li>
+                        <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">Profile</a>
+                    </li>
+                    <li>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
+                            <button type="submit" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">Log Out</button>
                         </form>
-                    </x-slot>
-                </x-dropdown>
+                    </li>
+                </ul>
             </div>
 
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
+            <button data-collapse-toggle="navbar-menu" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600 md:hidden" aria-controls="navbar-menu" aria-expanded="false">
+                <span class="sr-only">Open main menu</span>
+                <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+                </svg>
+            </button>
         </div>
-    </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
+        <div id="navbar-menu" class="hidden w-full md:order-1 md:block md:w-auto">
+            <ul class="mt-4 flex flex-col rounded-lg border border-gray-100 bg-gray-50 p-4 font-medium md:mt-0 md:flex-row md:space-x-1 md:border-0 md:bg-white md:p-0 rtl:space-x-reverse dark:border-transparent dark:bg-transparent">
+                <li>
+                    <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'bg-blue-700 text-white md:bg-blue-50 md:text-blue-700 dark:md:bg-blue-900/40 dark:md:text-blue-300' : 'text-gray-900 hover:bg-gray-100 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-blue-400' }} block rounded-lg px-3 py-2">Dashboard</a>
+                </li>
+                <li>
+                    <a href="{{ route('reports.index') }}" class="{{ request()->routeIs('reports.*') ? 'bg-blue-700 text-white md:bg-blue-50 md:text-blue-700 dark:md:bg-blue-900/40 dark:md:text-blue-300' : 'text-gray-900 hover:bg-gray-100 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-blue-400' }} block rounded-lg px-3 py-2">Laporan Bulanan</a>
+                </li>
+                <li>
+                    <a href="{{ route('leaves.index') }}" class="{{ request()->routeIs('leaves.*') ? 'bg-blue-700 text-white md:bg-blue-50 md:text-blue-700 dark:md:bg-blue-900/40 dark:md:text-blue-300' : 'text-gray-900 hover:bg-gray-100 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-blue-400' }} block rounded-lg px-3 py-2">Cuti Tahunan</a>
+                </li>
 
-            <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
-                Laporan Bulanan
-            </x-responsive-nav-link>
-
-            <x-nav-link :href="route('leaves.index')" :active="request()->routeIs('leaves.*')">
-                Cuti Tahunan
-            </x-nav-link>
-
-            @if(Auth::user()->role === 'admin')
-            <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                Master Pegawai
-            </x-responsive-nav-link>
-
-            <x-responsive-nav-link :href="route('job_packages.index')" :active="request()->routeIs('job_packages.*')">
-                Master Pekerjaan & Scope
-            </x-responsive-nav-link>
-
-            <x-responsive-nav-link :href="route('approvers.index')" :active="request()->routeIs('approvers.*')">
-                Master Pejabat
-            </x-responsive-nav-link>
-
-            <x-nav-link :href="route('contracts.index')" :active="request()->routeIs('contracts.*')">
-                Manajemen Kontrak
-            </x-nav-link>
-            @endif
-        </div>
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
-            </div>
+                @if(Auth::user()->role === 'admin')
+                    <li>
+                        <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'bg-blue-700 text-white md:bg-blue-50 md:text-blue-700 dark:md:bg-blue-900/40 dark:md:text-blue-300' : 'text-gray-900 hover:bg-gray-100 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-blue-400' }} block rounded-lg px-3 py-2">Master Pegawai</a>
+                    </li>
+                    <li>
+                        <a href="{{ route('job_packages.index') }}" class="{{ request()->routeIs('job_packages.*') ? 'bg-blue-700 text-white md:bg-blue-50 md:text-blue-700 dark:md:bg-blue-900/40 dark:md:text-blue-300' : 'text-gray-900 hover:bg-gray-100 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-blue-400' }} block rounded-lg px-3 py-2">Master Pekerjaan & Scope</a>
+                    </li>
+                    <li>
+                        <a href="{{ route('approvers.index') }}" class="{{ request()->routeIs('approvers.*') ? 'bg-blue-700 text-white md:bg-blue-50 md:text-blue-700 dark:md:bg-blue-900/40 dark:md:text-blue-300' : 'text-gray-900 hover:bg-gray-100 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-blue-400' }} block rounded-lg px-3 py-2">Master Pejabat</a>
+                    </li>
+                    <li>
+                        <a href="{{ route('contracts.index') }}" class="{{ request()->routeIs('contracts.*') ? 'bg-blue-700 text-white md:bg-blue-50 md:text-blue-700 dark:md:bg-blue-900/40 dark:md:text-blue-300' : 'text-gray-900 hover:bg-gray-100 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-blue-400' }} block rounded-lg px-3 py-2">Manajemen Kontrak</a>
+                    </li>
+                @endif
+            </ul>
         </div>
     </div>
 </nav>

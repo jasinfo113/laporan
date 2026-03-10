@@ -1,20 +1,20 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Tambah Paket Pekerjaan</h2>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight dark:text-gray-100">Tambah Paket Pekerjaan</h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white shadow-sm sm:rounded-lg">
+            <div class="rounded-lg bg-white shadow-sm dark:bg-gray-800">
                 <div class="p-6">
                     <form action="{{ route('job_packages.store') }}" method="POST">
                         @csrf
                         <div class="mb-6">
-                            <label class="block text-gray-700 font-bold mb-2 text-lg">Nama Paket Pekerjaan</label>
+                            <label class="mb-2 block text-lg font-bold text-gray-700 dark:text-gray-200">Nama Paket Pekerjaan</label>
                             <input type="text" name="nama_paket" placeholder="Contoh: Tenaga Ahli Programmer" class="shadow border rounded w-full py-3 px-4 text-lg" required>
                         </div>
                         <div class="mb-6 mt-4">
-                            <label class="block text-gray-700 font-bold mb-2">Pejabat Penandatangan (PPTK)</label>
+                            <label class="mb-2 block font-bold text-gray-700 dark:text-gray-200">Pejabat Penandatangan (PPTK)</label>
                             <select name="approver_id" class="shadow border rounded w-full py-3 px-4" required>
                                 <option value="">-- Pilih Pejabat --</option>
                                 @foreach($approvers as $approver)
@@ -24,11 +24,11 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="border-t pt-6 mt-6">
+                        <div class="mt-6 border-t pt-6 dark:border-gray-700">
                             <div class="flex justify-between items-center mb-4">
                                 <div>
-                                    <h3 class="font-bold text-gray-800 text-lg">Daftar Aktivitas / Ruang Lingkup</h3>
-                                    <p class="text-sm text-gray-500">Tambahkan atau sesuaikan rincian tugas untuk paket pekerjaan ini.</p>
+                                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Daftar Aktivitas / Ruang Lingkup</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Tambahkan atau sesuaikan rincian tugas untuk paket pekerjaan ini.</p>
                                 </div>
                                 <button type="button" onclick="addScopeRow()" class="bg-emerald-500 hover:bg-emerald-600 transition-colors text-white font-semibold py-2 px-4 rounded-md shadow-sm text-sm flex items-center gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -36,16 +36,16 @@
                                 </button>
                             </div>
 
-                            <div id="scopes-container" class="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm scope-row flex flex-col md:flex-row gap-4 items-start hover:shadow-md transition-shadow">
+                            <div id="scopes-container" class="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/30">
+                                <div class="scope-row flex flex-col items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800 md:flex-row">
 
                                     <div class="w-full md:w-1/4">
-                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Kode Aktivitas</label>
+                                        <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Kode Aktivitas</label>
                                         <input type="text" name="scopes[0][kode_aktivitas]" value="Aktifitas 01" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 py-2.5 px-3" required>
                                     </div>
 
                                     <div class="w-full md:flex-1">
-                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Uraian Ruang Lingkup</label>
+                                        <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Uraian Ruang Lingkup</label>
                                         <textarea name="scopes[0][uraian]" placeholder="Deskripsikan pekerjaan..." class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 py-2.5 px-3" rows="2" required></textarea>
                                     </div>
 
@@ -59,9 +59,9 @@
                             </div>
                         </div>
 
-                        <div class="mt-8 flex items-center gap-4 border-t pt-4">
+                        <div class="mt-8 flex items-center gap-4 border-t pt-4 dark:border-gray-700">
                             <button type="submit" class="bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold py-2.5 px-6 rounded-md shadow-sm">Simpan Data</button>
-                            <a href="{{ route('job_packages.index') }}" class="text-gray-500 hover:text-gray-800 font-semibold transition-colors py-2">Batal</a>
+                            <a href="{{ route('job_packages.index') }}" class="py-2 font-semibold text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100">Batal</a>
                         </div>
                     </form>
                 </div>
@@ -73,15 +73,15 @@
         let scopeIndex = 1; // Mulai dari 1 karena 0 sudah ada di form awal
         function addScopeRow() {
             let html = `
-                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm scope-row flex flex-col md:flex-row gap-4 items-start hover:shadow-md transition-shadow">
+                <div class="scope-row flex flex-col items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800 md:flex-row">
 
                     <div class="w-full md:w-1/4">
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Kode Aktivitas</label>
+                        <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Kode Aktivitas</label>
                         <input type="text" name="scopes[${scopeIndex}][kode_aktivitas]" value="Aktifitas ${String(scopeIndex + 1).padStart(2, '0')}" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 py-2.5 px-3" required>
                     </div>
 
                     <div class="w-full md:flex-1">
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Uraian Ruang Lingkup</label>
+                        <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Uraian Ruang Lingkup</label>
                         <textarea name="scopes[${scopeIndex}][uraian]" placeholder="Deskripsikan pekerjaan..." class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 py-2.5 px-3" rows="2" required></textarea>
                     </div>
 

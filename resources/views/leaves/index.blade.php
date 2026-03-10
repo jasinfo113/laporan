@@ -1,33 +1,33 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Riwayat Cuti Tahunan</h2>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight dark:text-gray-100">Riwayat Cuti Tahunan</h2>
     </x-slot>
 
     <div class="py-12"><div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
         @if (session('success'))
-            <div class="mb-4 bg-emerald-100 border border-emerald-400 text-emerald-700 px-4 py-3 rounded relative">
+            <div class="relative mb-4 rounded border border-emerald-400 bg-emerald-100 px-4 py-3 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                 {{ session('success') }}
             </div>
         @elseif (session('error'))
-            <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <div class="relative mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
                 {{ session('error') }}
             </div>
         @endif
 
-        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+        <div class="mb-6 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
             <div class="flex items-center gap-3">
                 <div class="p-2 bg-blue-100 text-blue-600 rounded-full">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
                 <div>
-                    <p class="text-sm font-bold text-blue-900">Informasi Sisa Cuti Tahun {{ $tahunSekarang }}</p>
-                    <p class="text-xs text-blue-700">Pastikan sisa cuti kamu mencukupi sebelum mengajukan.</p>
+                    <p class="text-sm font-bold text-blue-900 dark:text-blue-200">Informasi Sisa Cuti Tahun {{ $tahunSekarang }}</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-300">Pastikan sisa cuti kamu mencukupi sebelum mengajukan.</p>
                 </div>
             </div>
             <div class="text-center">
-                <span class="block text-2xl font-extrabold text-blue-700">{{ $sisaCuti }}</span>
-                <span class="block text-[10px] font-bold uppercase text-blue-500">HARI</span>
+                <span class="block text-2xl font-extrabold text-blue-700 dark:text-blue-300">{{ $sisaCuti }}</span>
+                <span class="block text-[10px] font-bold uppercase text-blue-500 dark:text-blue-400">HARI</span>
             </div>
         </div>
 
@@ -40,22 +40,22 @@
         </div>
         @endif
 
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
             <div class="p-6 text-gray-900 overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-gray-50 border-b border-gray-200">
+                        <tr class="bg-gray-50 border-b border-gray-200 dark:border-gray-700 dark:bg-gray-700/40">
                             @if(Auth::user()->role === 'admin')
-                                <th class="px-4 py-3 font-bold text-gray-600">Nama Pegawai</th>
+                                <th class="px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Nama Pegawai</th>
                             @endif
-                            <th class="px-4 py-3 font-bold text-gray-600">Tanggal Cuti</th>
-                            <th class="px-4 py-3 font-bold text-gray-600">Keterangan</th>
-                            <th class="px-4 py-3 font-bold text-gray-600 w-24">Aksi</th>
+                            <th class="px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Tanggal Cuti</th>
+                            <th class="px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Keterangan</th>
+                            <th class="w-24 px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse($leaves as $leave)
-                        <tr class="hover:bg-gray-50 transition-colors">
+                        <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40">
                             @if(Auth::user()->role === 'admin')
                                 <td class="px-4 py-3 text-gray-800 font-semibold">{{ $leave->user->name ?? 'Tidak Diketahui' }}</td>
                             @endif

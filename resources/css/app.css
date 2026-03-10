@@ -1,3 +1,112 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    html.dark {
+        color-scheme: dark;
+    }
+}
+
+@layer components {
+    .dark .bg-white {
+        background-color: rgb(31 41 55 / 1);
+    }
+
+    .dark .bg-gray-50 {
+        background-color: rgb(31 41 55 / 0.6);
+    }
+
+    .dark .bg-gray-100 {
+        background-color: rgb(55 65 81 / 0.6);
+    }
+
+    .dark .text-gray-900 {
+        color: rgb(243 244 246 / 1);
+    }
+
+    .dark .text-gray-800 {
+        color: rgb(243 244 246 / 1);
+    }
+
+    .dark .text-gray-700 {
+        color: rgb(229 231 235 / 1);
+    }
+
+    .dark .text-gray-600 {
+        color: rgb(209 213 219 / 1);
+    }
+
+    .dark .text-gray-500 {
+        color: rgb(156 163 175 / 1);
+    }
+
+    .dark .text-gray-400 {
+        color: rgb(107 114 128 / 1);
+    }
+
+    .dark .border {
+        border-color: rgb(75 85 99 / 1);
+    }
+
+    .dark .border-gray-100,
+    .dark .border-gray-200,
+    .dark .border-gray-300 {
+        border-color: rgb(55 65 81 / 1);
+    }
+
+    .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+    .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+        border-color: rgb(55 65 81 / 1);
+    }
+
+    .dark input,
+    .dark textarea,
+    .dark select {
+        border-color: rgb(75 85 99 / 1);
+        background-color: rgb(55 65 81 / 1);
+        color: rgb(243 244 246 / 1);
+    }
+
+    .dark input::placeholder,
+    .dark textarea::placeholder {
+        color: rgb(156 163 175 / 1);
+    }
+
+    .dark input:focus,
+    .dark textarea:focus,
+    .dark select:focus {
+        border-color: rgb(59 130 246 / 1);
+        --tw-ring-color: rgb(59 130 246 / 1);
+    }
+
+    .dark .select2-container--tailwindcss-3 .select2-selection {
+        border-color: rgb(75 85 99 / 1);
+        background-color: rgb(55 65 81 / 1);
+        color: rgb(243 244 246 / 1);
+    }
+
+    .dark .select2-container--tailwindcss-3 .select2-selection__placeholder {
+        color: rgb(156 163 175 / 1);
+    }
+
+    .dark .select2-container--tailwindcss-3 .select2-dropdown {
+        border-color: rgb(75 85 99 / 1);
+        background-color: rgb(31 41 55 / 1);
+    }
+
+    .dark .select2-container--tailwindcss-3 .select2-search__field {
+        border-color: rgb(75 85 99 / 1);
+        background-color: rgb(55 65 81 / 1);
+        color: rgb(243 244 246 / 1);
+    }
+
+    .dark .select2-container--tailwindcss-3 .select2-results__option {
+        color: rgb(229 231 235 / 1);
+    }
+
+    .dark .select2-container--tailwindcss-3 .select2-results__option--highlighted {
+        background-color: rgb(37 99 235 / 1);
+        color: rgb(255 255 255 / 1);
+    }
+}

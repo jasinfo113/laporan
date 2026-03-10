@@ -1,4 +1,5 @@
 import './bootstrap';
+import 'flowbite';
 
 import Alpine from 'alpinejs';
 import $ from 'jquery';
@@ -13,6 +14,57 @@ window.jQuery = $;
 if (typeof select2 === 'function') {
     select2(window, $);
 }
+
+const getStoredTheme = () => {
+    try {
+        return localStorage.getItem('theme');
+    } catch {
+        return null;
+    }
+};
+
+const getPreferredTheme = () => {
+    const storedTheme = getStoredTheme();
+    if (storedTheme === 'dark' || storedTheme === 'light') {
+        return storedTheme;
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const updateThemeToggleIcons = (theme) => {
+    document.querySelectorAll('[data-theme-toggle-icon-dark]').forEach((el) => {
+        el.classList.toggle('hidden', theme === 'dark');
+    });
+
+    document.querySelectorAll('[data-theme-toggle-icon-light]').forEach((el) => {
+        el.classList.toggle('hidden', theme !== 'dark');
+    });
+};
+
+const applyTheme = (theme) => {
+    const isDark = theme === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeToggleIcons(theme);
+};
+
+const initThemeToggle = () => {
+    applyTheme(getPreferredTheme());
+
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const nextTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(nextTheme);
+
+            try {
+                localStorage.setItem('theme', nextTheme);
+            } catch {
+                // Ignore storage write failures.
+            }
+        });
+    });
+};
 
 Alpine.start();
 
@@ -40,6 +92,7 @@ const initSelect2 = (root = document) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    initThemeToggle();
     initSelect2();
 
     // Keep Select2 applied for selects inserted after initial page load.
