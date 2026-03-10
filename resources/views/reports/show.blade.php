@@ -41,7 +41,7 @@
                                 <select name="scope_id" class="shadow border rounded w-full py-2 px-3 text-gray-700">
                                     <option value="">-- Pilih Aktivitas (Kosongkan jika Cuti/Libur) --</option>
                                     @foreach($scopes as $scope)
-                                        <option value="{{ $scope->id }}">{{ $scope->kode_aktivitas }} - {{ Str::limit($scope->uraian, 50) }}</option>
+                                        <option value="{{ $scope->id }}">{{ $scope->kode_aktivitas }} - {{ $scope->uraian }}</option>
                                     @endforeach
                                 </select>
                             </div>
