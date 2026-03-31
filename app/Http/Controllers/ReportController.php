@@ -66,23 +66,23 @@ class ReportController extends Controller
                          ->with('success', 'Laporan bulan baru berhasil dibuat!');
     }
 
-    // Halaman detail laporan (nanti untuk input foto & aktivitas)
+
     public function show(Report $report)
     {
         if ($report->user_id !== Auth::id()) {
             abort(403);
         }
-
         $report->load(['contract.jobPackage']);
-
-        // Scopes diambil dari Kontrak, bukan dari User lagi
         $scopes = $report->contract && $report->contract->jobPackage ? $report->contract->jobPackage->scopes : collect();
-
-        $dailyTasks = $report->dailyTasks()
+        $limit = request('limit', 10);
+        $query = $report->dailyTasks()
             ->with(['scope', 'taskImages'])
-            ->orderBy('tanggal')
-            ->paginate(10);
-
+            ->orderBy('tanggal', 'asc');
+        if ($limit === 'all') {
+            $dailyTasks = $query->get();
+        } else {
+            $dailyTasks = $query->paginate((int) $limit)->withQueryString();
+        }
         return view('reports.show', compact('report', 'scopes', 'dailyTasks'));
     }
 

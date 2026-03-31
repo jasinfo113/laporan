@@ -48,5 +48,28 @@
                 {{ $slot }}
             </main>
         </div>
+        <style>
+            .select2-dropdown {
+                overflow: hidden !important;
+                border-radius: 6px !important;
+            }
+
+            .select2-results__options {
+                max-height: 190px !important; /* Kunci maksimal tingginya di sini */
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+
+            .select2-container--default .select2-results__option {
+                white-space: normal !important;
+                word-wrap: break-word !important;
+                padding: 10px 12px !important; /* Bantalan atas-bawah biar nggak sumpek */
+                line-height: 1.4 !important;
+            }
+
+            .select2-results__option:last-child {
+                padding-bottom: 16px !important;
+            }
+        </style>
     </body>
 </html>

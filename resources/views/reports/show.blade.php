@@ -66,7 +66,26 @@
 
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                 <div class="p-6 text-gray-900">
-                    <h3 class="mb-4 text-lg font-bold dark:text-gray-100">Daftar Kegiatan Bulan Ini</h3>
+                    <div class="relative mb-4 flex flex-col items-center justify-center sm:flex-row sm:min-h-[44px]">
+
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 text-center">
+                            Daftar Kegiatan Bulan Ini
+                        </h3>
+
+                        <div class="mt-3 flex w-full justify-center sm:absolute sm:right-0 sm:top-1/2 sm:mt-0 sm:-translate-y-1/2 sm:w-auto">
+                            <form action="{{ route('reports.show', $report->id) }}" method="GET" class="flex items-center gap-2">
+                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Tampilkan:</label>
+
+                                <select data-native-select name="limit" onchange="this.form.submit()" class="w-[130px] bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 cursor-pointer">
+                                    <option value="10" {{ request('limit') == '10' ? 'selected' : '' }}>10 Baris</option>
+                                    <option value="25" {{ request('limit') == '25' ? 'selected' : '' }}>25 Baris</option>
+                                    <option value="50" {{ request('limit') == '50' ? 'selected' : '' }}>50 Baris</option>
+                                    <option value="all" {{ request('limit') == 'all' ? 'selected' : '' }}>Semua Data</option>
+                                </select>
+                            </form>
+                        </div>
+
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse text-sm">
                             <thead>
@@ -131,7 +150,9 @@
                             </tbody>
                         </table>
 
-                        {{ $dailyTasks->links('components.flowbite-pagination') }}
+                        @if($dailyTasks instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                            {{ $dailyTasks->links('components.flowbite-pagination') }}
+                        @endif
                     </div>
                 </div>
             </div>
