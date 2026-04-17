@@ -15,7 +15,7 @@ class DailyTaskController extends Controller
             'tanggal' => 'required|date',
             'scope_id' => 'nullable|exists:scopes,id', // Bisa kosong kalau cuti/libur
             'deskripsi_pekerjaan' => 'required|string',
-            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048' // Validasi file gambar
+            'task_images.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048' // Validasi file gambar
         ]);
 
         // Simpan kegiatan harian
@@ -26,8 +26,8 @@ class DailyTaskController extends Controller
         ]);
 
         // Proses upload banyak foto sekaligus
-        if ($request->hasFile('fotos')) {
-            foreach ($request->file('fotos') as $foto) {
+        if ($request->hasFile('task_images')) {
+            foreach ($request->file('task_images') as $foto) {
                 // Simpan ke folder storage/app/public/tasks
                 $path = $foto->store('tasks', 'public');
 

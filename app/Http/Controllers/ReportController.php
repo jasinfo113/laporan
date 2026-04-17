@@ -286,8 +286,13 @@ class ReportController extends Controller
             return response()->download($tempPath)->deleteFileAfterSend(true);
 
         } catch (\Exception $e) {
-            // TAMPILKAN ERROR DETAIL BUKAN 500 BLANK
-            return "<div style='padding:20px; color:#991b1b; background:#fee2e2; border:1px solid #ef4444;'> Error: " . $e->getMessage() . " di baris " . $e->getLine() . "</div>";
+            report($e);
+
+            $message = config('app.debug')
+                ? $e->getMessage().' di baris '.$e->getLine()
+                : 'Gagal mengekspor laporan Word. Silakan coba lagi.';
+
+            return back()->with('error', $message);
         }
     }
 }

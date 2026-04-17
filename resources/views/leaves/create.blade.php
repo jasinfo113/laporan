@@ -23,11 +23,6 @@
 
         <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
             <div class="p-6 text-gray-900">
-
-                @if (session('error'))
-                    <div class="mb-4 rounded bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-300">{{ session('error') }}</div>
-                @endif
-
                 <form action="{{ route('leaves.store') }}" method="POST">
                     @csrf
 

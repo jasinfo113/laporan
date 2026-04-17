@@ -45,6 +45,7 @@
 
             <!-- Page Content -->
             <main class="mx-auto max-w-screen-xl px-4 py-6">
+                <x-flash-alerts />
                 {{ $slot }}
             </main>
         </div>

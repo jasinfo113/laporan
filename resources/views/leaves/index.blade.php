@@ -9,10 +9,6 @@
             <div class="relative mb-4 rounded border border-emerald-400 bg-emerald-100 px-4 py-3 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                 {{ session('success') }}
             </div>
-        @elseif (session('error'))
-            <div class="relative mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
-                {{ session('error') }}
-            </div>
         @endif
 
         <div class="mb-6 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">

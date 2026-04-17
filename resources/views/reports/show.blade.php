@@ -53,8 +53,10 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="mb-2 block text-sm font-bold text-gray-700 dark:text-gray-200">Upload Foto Bukti (Bisa pilih banyak file sekaligus)</label>
-                            <input type="file" name="fotos[]" multiple accept="image/*" class="shadow border rounded w-full py-2 px-3 text-gray-700">
+                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                Upload Foto Bukti (Bisa pilih banyak file sekaligus, atau <span class="text-blue-500 font-bold">Ctrl+V untuk Paste Screenshot</span>)
+                            </label>
+                            <input type="file" id="foto_bukti" name="task_images[]" multiple accept="image/*" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400">
                         </div>
 
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
@@ -182,4 +184,48 @@
 
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Kita pantau setiap kali user nekan Ctrl+V / Paste di mana aja di halaman ini
+            document.addEventListener('paste', function (e) {
+                const fileInput = document.getElementById('foto_bukti');
+                if (!fileInput) return;
+
+                const items = (e.clipboardData || window.clipboardData).items;
+                let hasImage = false;
+
+                // Bikin wadah DataTransfer baru (karena input.files bawaan itu Read-Only)
+                const dataTransfer = new DataTransfer();
+
+                // 1. Ambil dulu file-file yang udah ada di inputan (biar gak ketimpa)
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    dataTransfer.items.add(fileInput.files[i]);
+                }
+
+                // 2. Cek isi clipboard, ada gambar nggak?
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const blob = items[i].getAsFile();
+
+                        // Bikin nama file otomatis biar rapi pas masuk database
+                        const date = new Date();
+                        const fileName = 'Screenshot_' + date.getTime() + '.png';
+
+                        // Bungkus jadi File object dan masukin ke wadah
+                        const file = new File([blob], fileName, { type: blob.type });
+                        dataTransfer.items.add(file);
+                        hasImage = true;
+                    }
+                }
+
+                // 3. Kalau beneran ada gambar yang di-paste, masukin ke input file
+                if (hasImage) {
+                    fileInput.files = dataTransfer.files;
+
+                    // Opsional: Kasih notif biar user tau paste-nya sukses
+                    alert('Screenshot berhasil ditambahkan ke form!');
+                }
+            });
+        });
+    </script>
 </x-app-layout>
