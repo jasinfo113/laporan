@@ -140,7 +140,7 @@
                                             @if($task->taskImages->count() > 0)
                                                 <div class="flex flex-wrap gap-2">
                                                     @foreach($task->taskImages as $image)
-                                                        <div class="w-2 rounded-xl">
+                                                        <div class="w-20 rounded-xl">
                                                             <button
                                                                 type="button"
                                                                 @click="
