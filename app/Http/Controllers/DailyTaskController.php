@@ -30,7 +30,7 @@ class DailyTaskController extends Controller
             'tanggal' => "required|date|after_or_equal:{$startDate}|before_or_equal:{$endDate}",
             'scope_id' => 'nullable|exists:scopes,id', // Bisa kosong kalau cuti/libur
             'deskripsi_pekerjaan' => 'required|string',
-            'task_images.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048' // Validasi file gambar
+            'task_images.*' => 'nullable|image|mimes:jpeg,png,jpg|max:5120' // Validasi file gambar
         ]);
 
         // Simpan kegiatan harian
@@ -77,7 +77,7 @@ class DailyTaskController extends Controller
             'tanggal' => "required|date|after_or_equal:{$startDate}|before_or_equal:{$endDate}",
             'scope_id' => 'nullable|exists:scopes,id',
             'deskripsi_pekerjaan' => 'required|string',
-            'task_images.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'task_images.*' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
         $task->update([
