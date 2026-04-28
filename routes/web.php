@@ -28,7 +28,9 @@ Route::middleware('auth')->group(function () {
     // --- Routes untuk Laporan Harian ---
     Route::resource('reports', ReportController::class);
     Route::post('/reports/{report}/tasks', [DailyTaskController::class, 'store'])->name('tasks.store');
+    Route::patch('/daily-tasks/{id}', [DailyTaskController::class, 'update'])->name('tasks.update');
     Route::delete('/daily-tasks/{id}', [DailyTaskController::class, 'destroy'])->name('tasks.destroy');
+    Route::delete('/task-images/{id}', [DailyTaskController::class, 'destroyImage'])->name('task-images.destroy');
     // Ekspor laporan ke Word
     Route::get('/reports/{report}/export', [ReportController::class, 'exportWord'])->name('reports.export');
     Route::resource('leaves', LeaveController::class)->only(['index', 'create', 'store', 'destroy']);
