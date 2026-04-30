@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Report;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use PhpOffice\PhpWord\TemplateProcessor;
 use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\Element\TextRun;
@@ -88,8 +89,12 @@ class ReportController extends Controller
 
     public function exportWord(Report $report)
     {
+        $tempImageDir = null;
+
         try {
             Settings::setOutputEscapingEnabled(true);
+            @set_time_limit(900);
+
             // Pastikan keamanan: hanya user pemilik laporan yang bisa cetak
             if ($report->user_id !== Auth::id()) {
                 abort(403);
@@ -253,7 +258,10 @@ class ReportController extends Controller
                 foreach ($task->taskImages as $img) {
                     $path = storage_path('app/public/' . $img->image_path);
                     if (file_exists($path)) {
-                        $semuaFoto[] = ['path' => $path, 'caption' => "Gambar {$nomorGambarLampi} " . $task->deskripsi_pekerjaan];
+                        $semuaFoto[] = [
+                            'path' => $this->resizeImageForWord($path, $tempImageDir),
+                            'caption' => "Gambar {$nomorGambarLampi} " . $task->deskripsi_pekerjaan,
+                        ];
                         $nomorGambarLampi++;
                     }
                 }
@@ -283,9 +291,17 @@ class ReportController extends Controller
             $tempPath = storage_path('app/public/' . $fileName);
             $template->saveAs($tempPath);
 
+            if ($tempImageDir && File::isDirectory($tempImageDir)) {
+                File::deleteDirectory($tempImageDir);
+            }
+
             return response()->download($tempPath)->deleteFileAfterSend(true);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            if ($tempImageDir && File::isDirectory($tempImageDir)) {
+                File::deleteDirectory($tempImageDir);
+            }
+
             report($e);
 
             $message = config('app.debug')
@@ -294,5 +310,110 @@ class ReportController extends Controller
 
             return back()->with('error', $message);
         }
+    }
+
+    private function resizeImageForWord(string $path, ?string &$tempImageDir): string
+    {
+        if (!extension_loaded('gd')) {
+            return $path;
+        }
+
+        $imageInfo = @getimagesize($path);
+        if (!$imageInfo || empty($imageInfo['mime'])) {
+            return $path;
+        }
+
+        [$width, $height] = $imageInfo;
+        if ($width <= 0 || $height <= 0) {
+            return $path;
+        }
+
+        $source = $this->createImageResource($path, $imageInfo['mime']);
+        if (!$source) {
+            return $path;
+        }
+
+        if ($imageInfo['mime'] === 'image/jpeg') {
+            $source = $this->normalizeJpegOrientation($source, $path);
+            $width = imagesx($source);
+            $height = imagesy($source);
+        }
+
+        $maxWidth = 1000;
+        $maxHeight = 1000;
+        $scale = min($maxWidth / $width, $maxHeight / $height, 1);
+        $targetWidth = max(1, (int) round($width * $scale));
+        $targetHeight = max(1, (int) round($height * $scale));
+
+        $target = imagecreatetruecolor($targetWidth, $targetHeight);
+        if (!$target) {
+            imagedestroy($source);
+            return $path;
+        }
+
+        $white = imagecolorallocate($target, 255, 255, 255);
+        imagefill($target, 0, 0, $white);
+
+        imagecopyresampled(
+            $target,
+            $source,
+            0,
+            0,
+            0,
+            0,
+            $targetWidth,
+            $targetHeight,
+            $width,
+            $height
+        );
+
+        if (!$tempImageDir) {
+            $tempImageDir = storage_path('app/report-export-images/' . uniqid('report_', true));
+            File::ensureDirectoryExists($tempImageDir);
+        }
+
+        $targetPath = $tempImageDir . DIRECTORY_SEPARATOR . pathinfo($path, PATHINFO_FILENAME) . '_' . substr(sha1($path . microtime(true)), 0, 10) . '.jpg';
+        $saved = imagejpeg($target, $targetPath, 75);
+
+        imagedestroy($source);
+        imagedestroy($target);
+
+        return $saved ? $targetPath : $path;
+    }
+
+    private function createImageResource(string $path, string $mime): \GdImage|false
+    {
+        return match ($mime) {
+            'image/jpeg' => @imagecreatefromjpeg($path),
+            'image/png' => @imagecreatefrompng($path),
+            'image/gif' => @imagecreatefromgif($path),
+            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($path) : false,
+            default => false,
+        };
+    }
+
+    private function normalizeJpegOrientation(\GdImage $image, string $path): \GdImage
+    {
+        if (!function_exists('exif_read_data')) {
+            return $image;
+        }
+
+        $exif = @exif_read_data($path);
+        $orientation = $exif['Orientation'] ?? null;
+
+        $rotated = match ($orientation) {
+            3 => imagerotate($image, 180, 0),
+            6 => imagerotate($image, -90, 0),
+            8 => imagerotate($image, 90, 0),
+            default => false,
+        };
+
+        if (!$rotated) {
+            return $image;
+        }
+
+        imagedestroy($image);
+
+        return $rotated;
     }
 }
