@@ -15,8 +15,8 @@ class LeaveController extends Controller
         $user = Auth::user();
         $tahunSekarang = date('Y');
 
-        // Jika yang login ADMIN: Tampilkan SEMUA data cuti
-        if ($user->role === 'admin') {
+        // Jika yang login ADMIN atau STAFF: Tampilkan SEMUA data cuti
+        if ($user->role === 'admin' || $user->role === 'staff') {
             $leaves = Leave::with('user') // Ambil relasi user biar bisa nampilin nama
                            ->orderBy('tanggal_cuti', 'desc')
                            ->paginate(10);
@@ -121,7 +121,7 @@ class LeaveController extends Controller
     public function destroy(Leave $leaf)
     {
         // Pastikan hanya pemiliknya ATAU ADMIN yang bisa batalin cuti
-        if ($leaf->user_id !== Auth::id() && Auth::user()->role !== 'admin') {
+        if ($leaf->user_id !== Auth::id() && Auth::user()->role !== 'admin' && Auth::user()->role !== 'staff') {
             abort(403, 'Akses ditolak.');
         }
 
