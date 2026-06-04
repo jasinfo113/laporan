@@ -8,7 +8,7 @@ use App\Models\TaskImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 
 class DailyTaskController extends Controller
 {
@@ -44,17 +44,15 @@ class DailyTaskController extends Controller
         // Proses upload banyak foto sekaligus
         if ($request->hasFile('task_images')) {
             foreach ($request->file('task_images') as $foto) {
-                
+
                 // Resize image ke maksimal 1000px
-                $image = Image::make($foto);
-                $image->resize(1000, 1000, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                });
-                
+                $image = Image::read($foto);
+                $image->scaleDown(1000, 1000);
+
                 // Simpan ke folder storage/app/public/tasks
-                $path = 'tasks/' . uniqid() . '.' . $foto->getClientOriginalExtension();
-                Storage::disk('public')->put($path, (string) $image->encode());
+                $extension = strtolower($foto->getClientOriginalExtension());
+                $path = 'tasks/' . uniqid() . '.' . $extension;
+                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension));
 
                 // Simpan path ke database
                 $task->taskImages()->create([
@@ -99,14 +97,12 @@ class DailyTaskController extends Controller
         if ($request->hasFile('task_images')) {
             foreach ($request->file('task_images') as $foto) {
                 // Resize image ke maksimal 1000px
-                $image = Image::make($foto);
-                $image->resize(1000, 1000, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                });
-                
-                $path = 'tasks/' . uniqid() . '.' . $foto->getClientOriginalExtension();
-                Storage::disk('public')->put($path, (string) $image->encode());
+                $image = Image::read($foto);
+                $image->scaleDown(1000, 1000);
+
+                $extension = strtolower($foto->getClientOriginalExtension());
+                $path = 'tasks/' . uniqid() . '.' . $extension;
+                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension));
 
                 $task->taskImages()->create([
                     'image_path' => $path,
