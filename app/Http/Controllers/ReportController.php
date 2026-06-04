@@ -16,10 +16,15 @@ class ReportController extends Controller
     // Menampilkan daftar laporan
     public function index()
     {
-        $reports = Report::where('user_id', Auth::id())
+        $user = Auth::user();
+        $reports = Report::with('user')
+                        ->when(!$this->canViewAllReports($user), function ($query) use ($user) {
+                            $query->where('user_id', $user->id);
+                        })
                         ->orderBy('tahun', 'desc')
                         ->orderBy('bulan', 'desc')
                         ->paginate(10);
+
         return view('reports.index', compact('reports'));
     }
 
@@ -70,10 +75,14 @@ class ReportController extends Controller
 
     public function show(Report $report)
     {
-        if ($report->user_id !== Auth::id()) {
+        $user = Auth::user();
+        $canManageReport = $report->user_id === $user->id;
+
+        if (!$canManageReport && !$this->canViewAllReports($user)) {
             abort(403);
         }
-        $report->load(['contract.jobPackage']);
+
+        $report->load(['user', 'contract.jobPackage']);
         $scopes = $report->contract && $report->contract->jobPackage ? $report->contract->jobPackage->scopes : collect();
         $limit = request('limit', 10);
         $query = $report->dailyTasks()
@@ -84,7 +93,7 @@ class ReportController extends Controller
         } else {
             $dailyTasks = $query->paginate((int) $limit)->withQueryString();
         }
-        return view('reports.show', compact('report', 'scopes', 'dailyTasks'));
+        return view('reports.show', compact('report', 'scopes', 'dailyTasks', 'canManageReport'));
     }
 
     public function exportWord(Report $report)
@@ -95,13 +104,15 @@ class ReportController extends Controller
             Settings::setOutputEscapingEnabled(true);
             @set_time_limit(900);
 
-            // Pastikan keamanan: hanya user pemilik laporan yang bisa cetak
-            if ($report->user_id !== Auth::id()) {
+            $user = Auth::user();
+
+            // Pemilik laporan dan staff boleh melihat/mencetak laporan.
+            if ($report->user_id !== $user->id && !$this->canViewAllReports($user)) {
                 abort(403);
             }
 
             // Load semua relasi
-            $report->load(['contract.jobPackage.approver', 'dailyTasks.scope', 'dailyTasks.taskImages']);
+            $report->load(['user', 'contract.jobPackage.approver', 'dailyTasks.scope', 'dailyTasks.taskImages']);
             $kontrak = $report->contract; // Shortcut variabel kontrak
             if (!$kontrak) {
                 return back()->with('error', 'Data kontrak tidak ditemukan pada laporan ini.');
@@ -415,5 +426,10 @@ class ReportController extends Controller
         imagedestroy($image);
 
         return $rotated;
+    }
+
+    private function canViewAllReports($user): bool
+    {
+        return $user && $user->role === 'staff';
     }
 }

@@ -34,6 +34,7 @@
                                 <label class="mb-2 block text-sm font-bold text-purple-600 dark:text-purple-300">Hak Akses (Role)</label>
                                 <select name="role" class="w-full rounded border bg-purple-50 px-3 py-2 shadow dark:bg-purple-900/30" required>
                                     <option value="pegawai">Pegawai Biasa (Hanya bisa akses Laporan)</option>
+                                    <option value="staff">Staff (Bisa melihat laporan semua pegawai)</option>
                                     <option value="admin">Administrator (Bisa akses Master Data)</option>
                                 </select>
                                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Hati-hati memberikan akses Administrator.</p>

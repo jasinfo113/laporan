@@ -35,6 +35,7 @@
                                 <label class="mb-2 block text-sm font-bold text-purple-600 dark:text-purple-300">Hak Akses (Role)</label>
                                 <select name="role" class="w-full rounded border bg-purple-50 px-3 py-2 shadow dark:bg-purple-900/30" required>
                                     <option value="pegawai" {{ $user->role === 'pegawai' ? 'selected' : '' }}>Pegawai Biasa</option>
+                                    <option value="staff" {{ $user->role === 'staff' ? 'selected' : '' }}>Staff</option>
                                     <option value="admin" {{ $user->role === 'admin' ? 'selected' : '' }}>Administrator</option>
                                 </select>
                             </div>

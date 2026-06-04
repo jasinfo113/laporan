@@ -29,7 +29,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'nik' => 'nullable|string',
-            'role' => 'required|in:admin,pegawai' // Tambah validasi role
+            'role' => 'required|in:admin,pegawai,staff' // Tambah validasi role
         ]);
 
         User::create([
@@ -54,7 +54,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'nik' => 'nullable|string',
-            'role' => 'required|in:admin,pegawai'
+            'role' => 'required|in:admin,pegawai,staff'
         ]);
 
         $data = $request->only(['name', 'email', 'nik', 'role']);
