@@ -27,7 +27,7 @@
             </div>
         </div>
 
-        @if(Auth::user()->role !== 'admin')
+        @if(Auth::user()->role !== 'admin' && Auth::user()->role !== 'staff')
         <div class="mb-4 flex justify-end">
             <a href="{{ route('leaves.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-lg shadow-sm transition-colors flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -41,7 +41,7 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-200 dark:border-gray-700 dark:bg-gray-700/40">
-                            @if(Auth::user()->role === 'admin')
+                            @if(Auth::user()->role === 'admin' || Auth::user()->role === 'staff')
                                 <th class="px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Nama Pegawai</th>
                             @endif
                             <th class="px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Tanggal Cuti</th>
@@ -52,7 +52,7 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse($leaves as $leave)
                         <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                            @if(Auth::user()->role === 'admin')
+                            @if(Auth::user()->role === 'admin' || Auth::user()->role === 'staff')
                                 <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">{{ $leave->user->name ?? 'Tidak Diketahui' }}</td>
                             @endif
 
@@ -77,7 +77,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="{{ Auth::user()->role === 'admin' ? '4' : '3' }}" class="px-4 py-8 text-center text-gray-400">Belum ada riwayat pengajuan cuti.</td>
+                            <td colspan="{{ Auth::user()->role === 'admin' || Auth::user()->role === 'staff' ? '4' : '3' }}" class="px-4 py-8 text-center text-gray-400">Belum ada riwayat pengajuan cuti.</td>
                         </tr>
                         @endforelse
                     </tbody>
