@@ -53,15 +53,10 @@ class DashboardController extends Controller
         $targetAktivitas = $activeContract && $activeContract->jobPackage ? $activeContract->jobPackage->scopes()->count() : 0;
 
         // 3. LOGIKA KALKULATOR CUTI (Tahun Berjalan)
-        $totalJatahCuti = $user->contracts()
-                               ->whereYear('tanggal_mulai', $tahunSekarang)
-                               ->sum('kuota_cuti');
-
-        $cutiTerpakai = $user->leaves()
-                             ->whereYear('tanggal_cuti', $tahunSekarang)
-                             ->count();
-
-        $sisaCuti = $totalJatahCuti - $cutiTerpakai;
+        $stats = $user->getLeaveStats($tahunSekarang);
+        $totalJatahCuti = $stats['total'];
+        $cutiTerpakai = $stats['used'];
+        $sisaCuti = $stats['remaining'];
 
         // 4. DATA 5 AKTIVITAS TERAKHIR
         $recentTasks = DailyTask::with(['scope', 'report'])

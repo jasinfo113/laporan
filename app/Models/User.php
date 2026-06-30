@@ -83,4 +83,38 @@ class User extends Authenticatable
             ->latest()
             ->first();
     }
+
+    /**
+     * Ambil kontrak aktif untuk periode bulan dan tahun tertentu.
+     */
+    public function getActiveContractForPeriod(int $month, int $year): ?Contract
+    {
+        $targetDate = \Carbon\Carbon::create($year, $month, 1)->startOfMonth();
+
+        return $this->contracts()
+            ->whereDate('tanggal_mulai', '<=', $targetDate->endOfMonth())
+            ->whereDate('tanggal_selesai', '>=', $targetDate->startOfMonth())
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Hitung sisa dan total jatah cuti untuk tahun tertentu.
+     */
+    public function getLeaveStats(int $year): array
+    {
+        $totalQuota = (int) $this->contracts()
+            ->whereYear('tanggal_mulai', $year)
+            ->sum('kuota_cuti');
+
+        $usedLeave = $this->leaves()
+            ->whereYear('tanggal_cuti', $year)
+            ->count();
+
+        return [
+            'total' => $totalQuota,
+            'used' => $usedLeave,
+            'remaining' => max(0, $totalQuota - $usedLeave)
+        ];
+    }
 }
