@@ -194,7 +194,10 @@ HTML;
         $query->when($search, function ($q) use ($search) {
             $q->where(function ($inner) use ($search) {
                 $inner->where('daily_tasks.deskripsi_pekerjaan', 'like', "%{$search}%")
-                      ->orWhere('scopes.kode_aktivitas', 'like', "%{$search}%")
+                      ->orWhereHas('scope', function ($sq) use ($search) {
+                          $sq->where('kode_aktivitas', 'like', "%{$search}%")
+                            ->orWhere('uraian', 'like', "%{$search}%");
+                      })
                       ->orWhere(DB::raw('DATE_FORMAT(daily_tasks.tanggal, "%d %M %Y")'), 'like', "%{$search}%");
             });
         });
