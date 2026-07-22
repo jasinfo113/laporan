@@ -36,55 +36,13 @@
         </div>
         @endif
 
-        <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
-            <div class="p-6 text-gray-900 overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 border-b border-gray-200 dark:border-gray-700 dark:bg-gray-700/40">
-                            @if(Auth::user()->role === 'admin' || Auth::user()->role === 'staff')
-                                <th class="px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Nama Pegawai</th>
-                            @endif
-                            <th class="px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Tanggal Cuti</th>
-                            <th class="px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Keterangan</th>
-                            <th class="w-24 px-4 py-3 font-bold text-gray-600 dark:text-gray-300">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse($leaves as $leave)
-                        <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                            @if(Auth::user()->role === 'admin' || Auth::user()->role === 'staff')
-                                <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">{{ $leave->user->name ?? 'Tidak Diketahui' }}</td>
-                            @endif
-
-                            <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">{{ \Carbon\Carbon::parse($leave->tanggal_cuti)->locale('id')->isoFormat('dddd, D MMMM Y') }}</td>
-                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $leave->keterangan }}</td>
-                            <td class="px-4 py-3">
-                                <form action="{{ route('leaves.destroy', $leave->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan/menghapus cuti ini?');">
-                                    @csrf @method('DELETE')
-                                    <x-icon-action
-                                        as="button"
-                                        type="submit"
-                                        color="red"
-                                        tooltip="Batal"
-                                        tooltip-id="tt-leave-cancel-{{ $leave->id }}"
-                                    >
-                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                    </x-icon-action>
-                                </form>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="{{ Auth::user()->role === 'admin' || Auth::user()->role === 'staff' ? '4' : '3' }}" class="px-4 py-8 text-center text-gray-400">Belum ada riwayat pengajuan cuti.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-
-                {{ $leaves->links('components.flowbite-pagination') }}
-            </div>
-        </div>
+        <x-data-table 
+            :columns="$columns"
+            :data="$leaves"
+            :server-side="true"
+            empty-title="Belum ada riwayat pengajuan cuti"
+            empty-description="Silahkan ajukan cuti baru jika diperlukan."
+            key-field="id"
+        />
     </div></div>
 </x-app-layout>

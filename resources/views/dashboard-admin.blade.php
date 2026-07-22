@@ -63,38 +63,16 @@
                     <h3 class="font-bold text-gray-700 dark:text-gray-100">Jadwal Cuti Mendatang / Terkini</h3>
                     <a href="{{ route('leaves.index') }}" class="text-sm font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Lihat Semua Data Cuti &rarr;</a>
                 </div>
-                <div class="p-0 overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-                                <th class="px-6 py-3 text-sm font-bold text-gray-600 dark:text-gray-300">Nama Pegawai</th>
-                                <th class="px-6 py-3 text-sm font-bold text-gray-600 dark:text-gray-300">Tanggal Cuti</th>
-                                <th class="px-6 py-3 text-sm font-bold text-gray-600 dark:text-gray-300">Keterangan</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            @forelse($pegawaiCuti as $cuti)
-                            <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                                <td class="px-6 py-4 font-semibold text-gray-800 dark:text-gray-100">{{ $cuti->user->name }}</td>
-                                <td class="px-6 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">
-                                    {{ \Carbon\Carbon::parse($cuti->tanggal_cuti)->locale('id')->isoFormat('D MMMM Y') }}
-                                    @if(\Carbon\Carbon::parse($cuti->tanggal_cuti)->isToday())
-                                        <span class="ml-2 bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded">Hari Ini</span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">{{ $cuti->keterangan }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="3" class="px-6 py-8 text-center text-gray-400 dark:text-gray-500">Belum ada pengajuan cuti dalam waktu dekat.</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-
-                    <div class="px-6 pb-4">
-                        {{ $pegawaiCuti->links('components.flowbite-pagination') }}
-                    </div>
+                <div class="p-4">
+                    <x-data-table 
+                        :columns="$columns"
+                        :data="$pegawaiCuti"
+                        :server-side="true"
+                        :items-per-page="5"
+                        empty-title="Belum ada data cuti mendatang"
+                        empty-description="Pegawai belum ada yang mengajukan cuti dalam waktu dekat."
+                        key-field="id"
+                    />
                 </div>
             </div>
 

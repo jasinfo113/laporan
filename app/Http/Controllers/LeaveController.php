@@ -7,6 +7,7 @@ use App\Http\Requests\StoreLeaveRequest;
 use App\Services\LeaveService;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class LeaveController extends Controller
 {
@@ -17,29 +18,110 @@ class LeaveController extends Controller
         $this->leaveService = $leaveService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $tahunSekarang = (int) date('Y');
+        $isAdminOrStaff = ($user->role === 'admin' || $user->role === 'staff');
 
-        // Jika yang login ADMIN atau STAFF: Tampilkan SEMUA data cuti
-        if ($user->role === 'admin' || $user->role === 'staff') {
-            $leaves = Leave::with('user')
-                           ->orderBy('tanggal_cuti', 'desc')
-                           ->paginate(10);
-            $sisaCuti = null;
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'tanggal_cuti');
+        $direction = $request->input('direction', 'desc');
+        $perPage = (int) $request->input('perPage', 10);
+
+        // Bound sorting keys
+        $sortableKeys = ['pegawai', 'tanggal_cuti', 'keterangan'];
+        if (!in_array($sort, $sortableKeys)) {
+            $sort = 'tanggal_cuti';
         }
-        // Jika yang login PEGAWAI: Tampilkan HANYA data miliknya
-        else {
+
+        $query = Leave::with('user');
+
+        if (!$isAdminOrStaff) {
+            $query->where('user_id', $user->id);
             $stats = $user->getLeaveStats($tahunSekarang);
             $sisaCuti = $stats['remaining'];
-
-            $leaves = Leave::where('user_id', $user->id)
-                           ->orderBy('tanggal_cuti', 'desc')
-                           ->paginate(10);
+        } else {
+            $sisaCuti = null;
+            // Join users to allow sorting / searching on name
+            $query->select('leaves.*')
+                  ->join('users', 'leaves.user_id', '=', 'users.id');
         }
 
-        return view('leaves.index', compact('leaves', 'sisaCuti', 'tahunSekarang'));
+        $query->when($search, function ($q) use ($search, $isAdminOrStaff) {
+            $q->where(function ($inner) use ($search, $isAdminOrStaff) {
+                $inner->where('leaves.keterangan', 'like', "%{$search}%")
+                      ->orWhere('leaves.tanggal_cuti', 'like', "%{$search}%");
+                if ($isAdminOrStaff) {
+                    $inner->orWhere('users.name', 'like', "%{$search}%");
+                }
+            });
+        });
+
+        if ($isAdminOrStaff && $sort === 'pegawai') {
+            $query->orderBy('users.name', $direction);
+        } else {
+            // Qualify the column name to avoid SQL ambiguity
+            $query->orderBy('leaves.' . $sort, $direction);
+        }
+
+        $leaves = $query->paginate($perPage);
+
+        // Columns definition
+        $columns = [];
+        if ($isAdminOrStaff) {
+            $columns[] = [
+                'key' => 'pegawai',
+                'label' => 'Nama Pegawai',
+                'sortable' => true,
+                'render' => function ($leave) {
+                    return '<span class="font-semibold text-gray-800 dark:text-gray-100">' . e($leave->user->name ?? 'Tidak Diketahui') . '</span>';
+                }
+            ];
+        }
+
+        $columns[] = [
+            'key' => 'tanggal_cuti',
+            'label' => 'Tanggal Cuti',
+            'sortable' => true,
+            'render' => function ($leave) {
+                return '<span class="font-semibold text-gray-800 dark:text-gray-100">' . 
+                       e(\Carbon\Carbon::parse($leave->tanggal_cuti)->locale('id')->isoFormat('dddd, D MMMM Y')) . 
+                       '</span>';
+            }
+        ];
+
+        $columns[] = [
+            'key' => 'keterangan',
+            'label' => 'Keterangan',
+            'sortable' => true,
+        ];
+
+        $columns[] = [
+            'key' => 'actions',
+            'label' => 'Aksi',
+            'sortable' => false,
+            'render' => function ($leave) {
+                $deleteUrl = route('leaves.destroy', $leave->id);
+                $csrf = csrf_field();
+                $method = method_field('DELETE');
+                return <<<HTML
+                    <div onclick="event.stopPropagation()">
+                        <form action="{$deleteUrl}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan/menghapus cuti ini?');">
+                            {$csrf}
+                            {$method}
+                            <button type="submit" class="inline-flex items-center rounded-lg border p-2 transition border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50" title="Batal">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+HTML;
+            }
+        ];
+
+        return view('leaves.index', compact('leaves', 'sisaCuti', 'tahunSekarang', 'columns'));
     }
 
     public function create()
