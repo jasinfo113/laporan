@@ -106,140 +106,15 @@
 
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                 <div class="p-6 text-gray-900">
-                    <div class="relative mb-4 flex flex-col items-center justify-center sm:flex-row sm:min-h-[44px]">
-
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 text-center">
-                            Daftar Kegiatan Bulan Ini
-                        </h3>
-
-                        <div class="mt-3 flex w-full justify-center sm:absolute sm:right-0 sm:top-1/2 sm:mt-0 sm:-translate-y-1/2 sm:w-auto">
-                            <form action="{{ route('reports.show', $report->id) }}" method="GET" class="flex items-center gap-2">
-                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Tampilkan:</label>
-
-                                <select data-native-select name="limit" onchange="this.form.submit()" class="w-[130px] bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 cursor-pointer">
-                                    <option value="10" {{ request('limit') == '10' ? 'selected' : '' }}>10 Baris</option>
-                                    <option value="25" {{ request('limit') == '25' ? 'selected' : '' }}>25 Baris</option>
-                                    <option value="50" {{ request('limit') == '50' ? 'selected' : '' }}>50 Baris</option>
-                                    <option value="all" {{ request('limit') == 'all' ? 'selected' : '' }}>Semua Data</option>
-                                </select>
-                            </form>
-                        </div>
-
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-gray-100 dark:bg-gray-700/50">
-                                    <th class="border px-4 py-2 dark:border-gray-700">Tanggal</th>
-                                    <th class="border px-4 py-2 dark:border-gray-700">Aktivitas</th>
-                                    <th class="border px-4 py-2 dark:border-gray-700">Deskripsi</th>
-                                    <th class="border px-4 py-2 dark:border-gray-700">Foto / Bukti</th>
-                                    @if($canManageReport)
-                                        <th class="w-24 border px-4 py-2 text-center dark:border-gray-700">Aksi</th>
-                                    @endif
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($dailyTasks as $task)
-                                    <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                                        <td class="border px-4 py-2 dark:border-gray-700">{{ \Carbon\Carbon::parse($task->tanggal)->format('d M Y') }}</td>
-                                        <td class="border px-4 py-2 dark:border-gray-700">{{ $task->scope ? $task->scope->kode_aktivitas : '-' }}</td>
-                                        <td class="border px-4 py-2 dark:border-gray-700">{{ $task->deskripsi_pekerjaan }}</td>
-                                        <td class="border px-4 py-2 dark:border-gray-700">
-                                            @if($task->taskImages->count() > 0)
-                                                <div class="flex flex-wrap gap-2">
-                                                    @foreach($task->taskImages as $image)
-                                                        <div class="w-20 rounded-xl">
-                                                            <button
-                                                                type="button"
-                                                                @click="
-                                                                    activeImage = '{{ asset('storage/' . $image->image_path) }}';
-                                                                    activeCaption = '{{ addslashes($task->deskripsi_pekerjaan) }}';
-                                                                    imageModalOpen = true;
-                                                                "
-                                                                class="block focus:outline-none"
-                                                                tooltip="Lihat Foto"
-                                                                tooltip-id="tt-image-{{ $image->id }}"
-                                                            >
-                                                                <img src="{{ asset('storage/' . $image->image_path) }}" class="h-20 w-20 object-cover rounded-t hover:opacity-90 transition" alt="Bukti kegiatan" tooltip-id="tt-image-view-{{ $image->id }}">
-                                                            </button>
-                                                            @if($canManageReport)
-                                                                <form action="{{ route('task-images.destroy', $image->id) }}" method="POST" onsubmit="return confirm('Hapus foto bukti ini saja?');">
-                                                                    @csrf
-                                                                    @method('DELETE')
-                                                                    <button
-                                                                        type="submit"
-                                                                        tooltip="Hapus Foto"
-                                                                        tooltip-id="tt-image-delete-{{ $image->id }}"
-                                                                        class="block w-full bg-red-600 px-2 py-1 text-center text-xs font-bold leading-none rounded-b text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
-                                                                    >
-                                                                        hapus
-                                                                    </button>
-                                                                </form>
-                                                            @endif
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            @else
-                                                <span class="text-gray-400">Tidak ada foto</span>
-                                            @endif
-                                        </td>
-                                        @if($canManageReport)
-                                            <td class="border px-4 py-2 text-center dark:border-gray-700">
-                                                <div class="flex items-center justify-center gap-2">
-                                                    <x-icon-action
-                                                        as="button"
-                                                        type="button"
-                                                        color="yellow"
-                                                        tooltip="Edit"
-                                                        tooltip-id="tt-task-edit-{{ $task->id }}"
-                                                        data-action="{{ route('tasks.update', $task->id) }}"
-                                                        data-tanggal="{{ \Carbon\Carbon::parse($task->tanggal)->format('Y-m-d') }}"
-                                                        data-scope-id="{{ $task->scope_id ?? '' }}"
-                                                        data-deskripsi="{{ $task->deskripsi_pekerjaan }}"
-                                                        x-on:click="openEditTask({
-                                                            action: $el.dataset.action,
-                                                            tanggal: $el.dataset.tanggal,
-                                                            scope_id: $el.dataset.scopeId || '',
-                                                            deskripsi_pekerjaan: $el.dataset.deskripsi
-                                                        })"
-                                                    >
-                                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                                        </svg>
-                                                    </x-icon-action>
-
-                                                    <form action="{{ route('tasks.destroy', $task->id) }}" method="POST" onsubmit="return confirm('Yakin mau hapus kegiatan ini beserta fotonya?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <x-icon-action
-                                                            as="button"
-                                                            type="submit"
-                                                            color="red"
-                                                            tooltip="Hapus"
-                                                            tooltip-id="tt-task-delete-{{ $task->id }}"
-                                                        >
-                                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5h6v2m-7 4v6m4-6v6m4-10v12a1 1 0 01-1 1H9a1 1 0 01-1-1V7h8z"/>
-                                                            </svg>
-                                                        </x-icon-action>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        @endif
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="{{ $canManageReport ? '5' : '4' }}" class="border px-4 py-4 text-center text-gray-500 dark:border-gray-700 dark:text-gray-400">Belum ada kegiatan yang diinput.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-
-                        @if($dailyTasks instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                            {{ $dailyTasks->links('components.flowbite-pagination') }}
-                        @endif
-                    </div>
+                    <x-data-table 
+                        :columns="$columns"
+                        :data="$dailyTasks"
+                        :server-side="true"
+                        :items-per-page="request('limit', 10)"
+                        empty-title="Belum ada kegiatan yang diinput"
+                        empty-description="Silahkan tambah kegiatan baru di atas."
+                        key-field="id"
+                    />
                 </div>
             </div>
 

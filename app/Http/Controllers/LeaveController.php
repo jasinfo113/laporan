@@ -3,116 +3,146 @@
 namespace App\Http\Controllers;
 
 use App\Models\Leave;
-use App\Models\Report;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreLeaveRequest;
+use App\Services\LeaveService;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class LeaveController extends Controller
 {
-    public function index()
+    protected LeaveService $leaveService;
+
+    public function __construct(LeaveService $leaveService)
+    {
+        $this->leaveService = $leaveService;
+    }
+
+    public function index(Request $request)
     {
         $user = Auth::user();
-        $tahunSekarang = date('Y');
+        $tahunSekarang = (int) date('Y');
+        $isAdminOrStaff = ($user->role === 'admin' || $user->role === 'staff');
 
-        // Jika yang login ADMIN atau STAFF: Tampilkan SEMUA data cuti
-        if ($user->role === 'admin' || $user->role === 'staff') {
-            $leaves = Leave::with('user') // Ambil relasi user biar bisa nampilin nama
-                           ->orderBy('tanggal_cuti', 'desc')
-                           ->paginate(10);
-            $sisaCuti = null; // Admin gak butuh sisa cuti di halaman ini
-        }
-        // Jika yang login PEGAWAI: Tampilkan HANYA data miliknya
-        else {
-            $totalJatahCuti = $user->contracts()->whereYear('tanggal_mulai', $tahunSekarang)->sum('kuota_cuti');
-            $cutiTerpakai = $user->leaves()->whereYear('tanggal_cuti', $tahunSekarang)->count();
-            $sisaCuti = $totalJatahCuti - $cutiTerpakai;
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'tanggal_cuti');
+        $direction = $request->input('direction', 'desc');
+        $perPage = (int) $request->input('perPage', 10);
 
-            $leaves = Leave::where('user_id', $user->id)
-                           ->orderBy('tanggal_cuti', 'desc')
-                           ->paginate(10);
+        // Bound sorting keys
+        $sortableKeys = ['pegawai', 'tanggal_cuti', 'keterangan'];
+        if (!in_array($sort, $sortableKeys)) {
+            $sort = 'tanggal_cuti';
         }
 
-        return view('leaves.index', compact('leaves', 'sisaCuti', 'tahunSekarang'));
+        $query = Leave::with('user');
+
+        if (!$isAdminOrStaff) {
+            $query->where('user_id', $user->id);
+            $stats = $user->getLeaveStats($tahunSekarang);
+            $sisaCuti = $stats['remaining'];
+        } else {
+            $sisaCuti = null;
+            // Join users to allow sorting / searching on name
+            $query->select('leaves.*')
+                  ->join('users', 'leaves.user_id', '=', 'users.id');
+        }
+
+        $query->when($search, function ($q) use ($search, $isAdminOrStaff) {
+            $q->where(function ($inner) use ($search, $isAdminOrStaff) {
+                $inner->where('leaves.keterangan', 'like', "%{$search}%")
+                      ->orWhere('leaves.tanggal_cuti', 'like', "%{$search}%");
+                if ($isAdminOrStaff) {
+                    $inner->orWhere('users.name', 'like', "%{$search}%");
+                }
+            });
+        });
+
+        if ($isAdminOrStaff && $sort === 'pegawai') {
+            $query->orderBy('users.name', $direction);
+        } else {
+            // Qualify the column name to avoid SQL ambiguity
+            $query->orderBy('leaves.' . $sort, $direction);
+        }
+
+        $leaves = $query->paginate($perPage);
+
+        // Columns definition
+        $columns = [];
+        if ($isAdminOrStaff) {
+            $columns[] = [
+                'key' => 'pegawai',
+                'label' => 'Nama Pegawai',
+                'sortable' => true,
+                'render' => function ($leave) {
+                    return '<span class="font-semibold text-gray-800 dark:text-gray-100">' . e($leave->user->name ?? 'Tidak Diketahui') . '</span>';
+                }
+            ];
+        }
+
+        $columns[] = [
+            'key' => 'tanggal_cuti',
+            'label' => 'Tanggal Cuti',
+            'sortable' => true,
+            'render' => function ($leave) {
+                return '<span class="font-semibold text-gray-800 dark:text-gray-100">' . 
+                       e(\Carbon\Carbon::parse($leave->tanggal_cuti)->locale('id')->isoFormat('dddd, D MMMM Y')) . 
+                       '</span>';
+            }
+        ];
+
+        $columns[] = [
+            'key' => 'keterangan',
+            'label' => 'Keterangan',
+            'sortable' => true,
+        ];
+
+        $columns[] = [
+            'key' => 'actions',
+            'label' => 'Aksi',
+            'sortable' => false,
+            'render' => function ($leave) {
+                $deleteUrl = route('leaves.destroy', $leave->id);
+                $csrf = csrf_field();
+                $method = method_field('DELETE');
+                return <<<HTML
+                    <div onclick="event.stopPropagation()">
+                        <form action="{$deleteUrl}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan/menghapus cuti ini?');">
+                            {$csrf}
+                            {$method}
+                            <button type="submit" class="inline-flex items-center rounded-lg border p-2 transition border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50" title="Batal">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+HTML;
+            }
+        ];
+
+        return view('leaves.index', compact('leaves', 'sisaCuti', 'tahunSekarang', 'columns'));
     }
 
     public function create()
     {
         $user = Auth::user();
-        $tahunSekarang = date('Y');
+        $tahunSekarang = (int) date('Y');
 
-        // Hitung sisa cuti untuk ditampilkan di form
-        $totalJatahCuti = $user->contracts()->whereYear('tanggal_mulai', $tahunSekarang)->sum('kuota_cuti');
-        $cutiTerpakai = $user->leaves()->whereYear('tanggal_cuti', $tahunSekarang)->count();
-        $sisaCuti = $totalJatahCuti - $cutiTerpakai;
+        $stats = $user->getLeaveStats($tahunSekarang);
+        $sisaCuti = $stats['remaining'];
 
         return view('leaves.create', compact('sisaCuti', 'tahunSekarang'));
     }
 
-    public function store(Request $request)
+    public function store(StoreLeaveRequest $request)
     {
-        $request->validate([
-            'tanggal_cuti' => 'required|date',
-            'keterangan' => 'required|string|max:255',
-        ]);
-
         $user = Auth::user();
-        $tahunCuti = Carbon::parse($request->tanggal_cuti)->year;
 
-        // LOGIKA PENJAGA: Cek apakah jatah cuti di tahun tersebut masih ada
-        $totalJatahCuti = $user->contracts()->whereYear('tanggal_mulai', $tahunCuti)->sum('kuota_cuti');
-        $cutiTerpakai = $user->leaves()->whereYear('tanggal_cuti', $tahunCuti)->count();
-        $sisaCuti = $totalJatahCuti - $cutiTerpakai;
-
-        if ($sisaCuti <= 0) {
-            return back()->with('error', "Pengajuan gagal! Jatah cuti kamu untuk tahun {$tahunCuti} sudah habis.");
-        }
-
-        // Cek jangan sampai input cuti di tanggal yang sama dua kali
-        $sudahCuti = Leave::where('user_id', $user->id)
-                          ->whereDate('tanggal_cuti', $request->tanggal_cuti)
-                          ->exists();
-
-        if ($sudahCuti) {
-            return back()->with('error', 'Kamu sudah mengajukan cuti di tanggal tersebut!');
-        }
-
-        Leave::create([
-            'user_id' => $user->id,
-            'tanggal_cuti' => $request->tanggal_cuti,
-            'keterangan' => $request->keterangan,
-        ]);
-
-        $tanggal = Carbon::parse($request->tanggal_cuti);
-        $bulan = $tanggal->month;
-        $tahun = $tanggal->year;
-
-        $report = Report::where('user_id', $user->id)
-                        ->where('bulan', $bulan)
-                        ->where('tahun', $tahun)
-                        ->first();
-        if (!$report) {
-            $activeContract = $user->contracts()
-                ->whereDate('tanggal_mulai', '<=', $request->tanggal_cuti)
-                ->whereDate('tanggal_selesai', '>=', $request->tanggal_cuti)
-                ->first();
-
-            if($activeContract) {
-                $report = Report::create([
-                    'user_id' => $user->id,
-                    'bulan' => $bulan,
-                    'tahun' => $tahun,
-                    'contract_id' => $activeContract->id
-                ]);
-            }
-        }
-
-        if($report) {
-            $report->dailyTasks()->create([
-                'scope_id' => null, // Cuti tidak punya scope
-                'tanggal' => $request->tanggal_cuti,
-                'deskripsi_pekerjaan' => 'Cuti: ' . $request->keterangan,
-            ]);
+        try {
+            $this->leaveService->applyForLeave($user, $request->tanggal_cuti, $request->keterangan);
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
         }
 
         return redirect()->route('leaves.index')->with('success', 'Pengajuan cuti berhasil! Sisa cuti kamu otomatis berkurang.');
@@ -120,12 +150,18 @@ class LeaveController extends Controller
 
     public function destroy(Leave $leaf)
     {
-        // Pastikan hanya pemiliknya ATAU ADMIN yang bisa batalin cuti
-        if ($leaf->user_id !== Auth::id() && Auth::user()->role !== 'admin' && Auth::user()->role !== 'staff') {
+        $user = Auth::user();
+
+        // Pastikan hanya pemiliknya ATAU ADMIN/STAFF yang bisa batalin cuti
+        if ($leaf->user_id !== $user->id && $user->role !== 'admin' && $user->role !== 'staff') {
             abort(403, 'Akses ditolak.');
         }
 
-        $leaf->delete();
+        try {
+            $this->leaveService->cancelLeave($leaf);
+        } catch (\Throwable $e) {
+            return redirect()->route('leaves.index')->with('error', 'Gagal membatalkan cuti: ' . $e->getMessage());
+        }
 
         return redirect()->route('leaves.index')->with('success', 'Data cuti berhasil dibatalkan/dihapus.');
     }

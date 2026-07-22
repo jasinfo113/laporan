@@ -3,29 +3,117 @@
 namespace App\Http\Controllers;
 
 use App\Models\Report;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreReportRequest;
+use App\Services\DocumentExportService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\File;
-use PhpOffice\PhpWord\TemplateProcessor;
-use PhpOffice\PhpWord\Settings;
-use PhpOffice\PhpWord\Element\TextRun;
-use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    protected DocumentExportService $exportService;
+
+    public function __construct(DocumentExportService $exportService)
+    {
+        $this->exportService = $exportService;
+    }
+
     // Menampilkan daftar laporan
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
-        $reports = Report::with('user')
-                        ->when(!$this->canViewAllReports($user), function ($query) use ($user) {
-                            $query->where('user_id', $user->id);
-                        })
-                        ->orderBy('tahun', 'desc')
-                        ->orderBy('bulan', 'desc')
-                        ->paginate(10);
+        $canViewAllReports = $user->role === 'staff';
 
-        return view('reports.index', compact('reports'));
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'tahun');
+        $direction = $request->input('direction', 'desc');
+        $perPage = (int) $request->input('perPage', 10);
+
+        // Bound sorting keys
+        $sortableKeys = ['pegawai', 'bulan', 'tahun'];
+        if (!in_array($sort, $sortableKeys)) {
+            $sort = 'tahun';
+        }
+
+        $query = Report::with('user');
+
+        if (!$canViewAllReports) {
+            $query->where('user_id', $user->id);
+        } else {
+            // Join users to allow sorting / searching on employee name
+            $query->select('reports.*')
+                  ->join('users', 'reports.user_id', '=', 'users.id');
+        }
+
+        $query->when($search, function ($q) use ($search, $canViewAllReports) {
+            $q->where(function ($inner) use ($search, $canViewAllReports) {
+                $inner->where('reports.tahun', 'like', "%{$search}%")
+                      ->orWhere('reports.bulan', 'like', "%{$search}%");
+                if ($canViewAllReports) {
+                    $inner->orWhere('users.name', 'like', "%{$search}%");
+                }
+            });
+        });
+
+        if ($canViewAllReports && $sort === 'pegawai') {
+            $query->orderBy('users.name', $direction);
+        } else {
+            $query->orderBy('reports.' . $sort, $direction);
+            if ($sort === 'tahun') {
+                $query->orderBy('reports.bulan', $direction);
+            }
+        }
+
+        $reports = $query->paginate($perPage);
+
+        $columns = [];
+        if ($canViewAllReports) {
+            $columns[] = [
+                'key' => 'pegawai',
+                'label' => 'Pegawai',
+                'sortable' => true,
+                'render' => function ($report) {
+                    return '<span class="font-semibold text-gray-800 dark:text-gray-150">' . e($report->user->name ?? '-') . '</span>';
+                }
+            ];
+        }
+
+        $columns[] = [
+            'key' => 'bulan',
+            'label' => 'Bulan',
+            'sortable' => true,
+            'render' => function ($report) {
+                return e(date('F', mktime(0, 0, 0, $report->bulan, 10)));
+            }
+        ];
+
+        $columns[] = [
+            'key' => 'tahun',
+            'label' => 'Tahun',
+            'sortable' => true,
+        ];
+
+        $columns[] = [
+            'key' => 'actions',
+            'label' => 'Aksi',
+            'sortable' => false,
+            'render' => function ($report) {
+                $showUrl = route('reports.show', $report->id);
+                return <<<HTML
+                    <div onclick="event.stopPropagation()">
+                        <a href="{$showUrl}" class="inline-flex items-center gap-1.5 rounded-lg border p-2 transition border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50" title="Buka & Isi">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            <span class="text-xs font-semibold">Buka & Isi</span>
+                        </a>
+                    </div>
+HTML;
+            }
+        ];
+
+        return view('reports.index', compact('reports', 'columns'));
     }
 
     public function create()
@@ -33,22 +121,16 @@ class ReportController extends Controller
         return view('reports.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreReportRequest $request)
     {
-        $request->validate([
-            'bulan' => 'required|integer|min:1|max:12',
-            'tahun' => 'required|integer|min:2020'
-        ]);
-
         $user = Auth::user();
 
         // 1. CEK KONTRAK AKTIF
         // Laporan hanya bisa dibuat kalau pegawai punya kontrak di bulan & tahun tersebut
-        // (Untuk simplifikasi, kita ambil kontrak yang sedang aktif saat laporan dibuat)
-        $activeContract = $user->activeContract;
+        $activeContract = $user->getActiveContractForPeriod($request->bulan, $request->tahun);
 
         if (!$activeContract) {
-            return back()->with('error', 'Gagal membuat laporan: Kamu belum memiliki kontrak kerja yang aktif saat ini!');
+            return back()->with('error', 'Gagal membuat laporan: Kamu belum memiliki kontrak kerja yang aktif pada periode tersebut!');
         }
 
         $exists = Report::where('user_id', $user->id)
@@ -63,7 +145,7 @@ class ReportController extends Controller
         // 2. SIMPAN REPORT DENGAN ID KONTRAK
         $report = Report::create([
             'user_id' => $user->id,
-            'contract_id' => $activeContract->id, // <--- Relasi baru!
+            'contract_id' => $activeContract->id,
             'bulan' => $request->bulan,
             'tahun' => $request->tahun,
         ]);
@@ -72,8 +154,7 @@ class ReportController extends Controller
                          ->with('success', 'Laporan bulan baru berhasil dibuat!');
     }
 
-
-    public function show(Report $report)
+    public function show(Request $request, Report $report)
     {
         $user = Auth::user();
         $canManageReport = $report->user_id === $user->id;
@@ -84,348 +165,191 @@ class ReportController extends Controller
 
         $report->load(['user', 'contract.jobPackage']);
         $scopes = $report->contract && $report->contract->jobPackage ? $report->contract->jobPackage->scopes : collect();
-        $limit = request('limit', 10);
-        $query = $report->dailyTasks()
-            ->with(['scope', 'taskImages'])
-            ->orderBy('tanggal', 'asc');
-        if ($limit === 'all') {
-            $dailyTasks = $query->get();
-        } else {
-            $dailyTasks = $query->paginate((int) $limit)->withQueryString();
+
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'tanggal');
+        $direction = $request->input('direction', 'asc');
+        
+        // Handle limit or perPage
+        $limit = $request->input('limit', $request->input('perPage', 10));
+        $perPage = $limit === 'all' ? 1000 : (int) $limit;
+
+        // Bound sorting keys
+        $sortableKeys = ['tanggal', 'scope', 'deskripsi_pekerjaan'];
+        if (!in_array($sort, $sortableKeys)) {
+            $sort = 'tanggal';
         }
-        return view('reports.show', compact('report', 'scopes', 'dailyTasks', 'canManageReport'));
+
+        $query = $report->dailyTasks()
+            ->with(['scope', 'taskImages']);
+
+        if ($sort === 'scope') {
+            $query->select('daily_tasks.*')
+                  ->leftJoin('scopes', 'daily_tasks.scope_id', '=', 'scopes.id')
+                  ->orderBy('scopes.kode_aktivitas', $direction);
+        } else {
+            $query->orderBy('daily_tasks.' . $sort, $direction);
+        }
+
+        $query->when($search, function ($q) use ($search) {
+            $q->where(function ($inner) use ($search) {
+                $inner->where('daily_tasks.deskripsi_pekerjaan', 'like', "%{$search}%")
+                      ->orWhere('scopes.kode_aktivitas', 'like', "%{$search}%")
+                      ->orWhere(DB::raw('DATE_FORMAT(daily_tasks.tanggal, "%d %M %Y")'), 'like', "%{$search}%");
+            });
+        });
+
+        $dailyTasks = $query->paginate($perPage)->withQueryString();
+
+        $columns = [
+            [
+                'key' => 'tanggal',
+                'label' => 'Tanggal',
+                'sortable' => true,
+                'render' => function ($task) {
+                    return e(\Carbon\Carbon::parse($task->tanggal)->format('d M Y'));
+                }
+            ],
+            [
+                'key' => 'scope',
+                'label' => 'Aktivitas',
+                'sortable' => true,
+                'render' => function ($task) {
+                    return e($task->scope ? $task->scope->kode_aktivitas : '-');
+                }
+            ],
+            [
+                'key' => 'deskripsi_pekerjaan',
+                'label' => 'Deskripsi',
+                'sortable' => true,
+                'render' => function ($task) {
+                    return e($task->deskripsi_pekerjaan);
+                }
+            ],
+            [
+                'key' => 'task_images',
+                'label' => 'Foto / Bukti',
+                'sortable' => false,
+                'render' => function ($task) use ($canManageReport) {
+                    if ($task->taskImages->count() === 0) {
+                        return '<span class="text-gray-400">Tidak ada foto</span>';
+                    }
+                    $imagesHTML = '<div class="flex flex-wrap gap-2">';
+                    foreach ($task->taskImages as $image) {
+                        $assetUrl = asset('storage/' . $image->image_path);
+                        $escapedCaption = addslashes(e($task->deskripsi_pekerjaan));
+                        $roundedClass = $canManageReport ? 'rounded-t' : 'rounded';
+                        $imagesHTML .= <<<HTML
+                            <div class="w-20 rounded-xl" onclick="event.stopPropagation()">
+                                <button
+                                    type="button"
+                                    @click="
+                                        activeImage = '{$assetUrl}';
+                                        activeCaption = '{$escapedCaption}';
+                                        imageModalOpen = true;
+                                    "
+                                    class="block focus:outline-none"
+                                >
+                                    <img src="{$assetUrl}" class="h-12 w-20 {$roundedClass} object-cover shadow-xs transition hover:scale-105" alt="Bukti"/>
+                                </button>
+HTML;
+                        if ($canManageReport) {
+                            $destroyUrl = route('task-images.destroy', $image->id);
+                            $csrf = csrf_field();
+                            $method = method_field('DELETE');
+                            $imagesHTML .= <<<HTML
+                                <form action="{$destroyUrl}" method="POST" onsubmit="return confirm('Hapus foto bukti ini saja?');" class="m-0 p-0">
+                                    {$csrf}
+                                    {$method}
+                                    <button
+                                        type="submit"
+                                        class="block w-full bg-red-600 px-2 py-1 text-center text-xs font-bold leading-none rounded-b text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                                    >
+                                        hapus
+                                    </button>
+                                </form>
+HTML;
+                        }
+                        $imagesHTML .= '</div>';
+                    }
+                    $imagesHTML .= '</div>';
+                    return $imagesHTML;
+                }
+            ]
+        ];
+
+        if ($canManageReport) {
+            $columns[] = [
+                'key' => 'actions',
+                'label' => 'Aksi',
+                'sortable' => false,
+                'align' => 'center',
+                'render' => function ($task) {
+                    $taskData = [
+                        'action' => route('tasks.update', $task->id),
+                        'tanggal' => \Carbon\Carbon::parse($task->tanggal)->format('Y-m-d'),
+                        'scope_id' => $task->scope_id ?? '',
+                        'deskripsi_pekerjaan' => $task->deskripsi_pekerjaan,
+                    ];
+                    $escapedTask = htmlspecialchars(json_encode($taskData), ENT_QUOTES, 'UTF-8');
+                    $csrf = csrf_field();
+                    $method = method_field('DELETE');
+                    $deleteUrl = route('tasks.destroy', $task->id);
+                    return <<<HTML
+                        <div class="flex justify-center gap-2" onclick="event.stopPropagation()">
+                            <button
+                                type="button"
+                                @click="openEditTask({$escapedTask})"
+                                class="inline-flex items-center rounded-lg border p-2 transition border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50"
+                                title="Edit"
+                            >
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h2M5 19h14M7 16l9-9 2 2-9 9H7v-2z"/>
+                                </svg>
+                            </button>
+                            <form action="{$deleteUrl}" method="POST" onsubmit="return confirm('Yakin ingin menghapus aktivitas ini?');">
+                                {$csrf}
+                                {$method}
+                                <button
+                                    type="submit"
+                                    class="inline-flex items-center rounded-lg border p-2 transition border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+                                    title="Hapus"
+                                >
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+HTML;
+                }
+            ];
+        }
+
+        return view('reports.show', compact('report', 'scopes', 'dailyTasks', 'canManageReport', 'columns'));
     }
 
     public function exportWord(Report $report)
     {
-        $tempImageDir = null;
+        $user = Auth::user();
+
+        // Pemilik laporan dan staff boleh melihat/mencetak laporan.
+        if ($report->user_id !== $user->id && !$this->canViewAllReports($user)) {
+            abort(403);
+        }
 
         try {
-            Settings::setOutputEscapingEnabled(true);
-            @set_time_limit(900);
-
-            $user = Auth::user();
-
-            // Pemilik laporan dan staff boleh melihat/mencetak laporan.
-            if ($report->user_id !== $user->id && !$this->canViewAllReports($user)) {
-                abort(403);
-            }
-
-            // Load semua relasi
-            $report->load(['user', 'contract.jobPackage.approver', 'dailyTasks.scope', 'dailyTasks.taskImages']);
-            $kontrak = $report->contract; // Shortcut variabel kontrak
-            if (!$kontrak) {
-                return back()->with('error', 'Data kontrak tidak ditemukan pada laporan ini.');
-            }
-
-            // 1. Panggil file template
-            $templatePath = resource_path('templates/template_laporan.docx');
-            if (!file_exists($templatePath)) {
-                return back()->with('error', 'File template_laporan.docx tidak ditemukan di folder templates!');
-            }
-
-            $template = new TemplateProcessor($templatePath);
-
-            // 2. Replace Variabel Header/Biodata
-            $namaBulan = Carbon::createFromDate($report->tahun, $report->bulan, 1)->locale('id')->isoFormat('MMMM');
-            $tanggalLaporan = Carbon::create($report->tahun, $report->bulan, 1)->addMonth();
-            if ($tanggalLaporan->isWeekend()) {
-                $tanggalLaporan->next(Carbon::MONDAY);
-            }
-
-            $template->setValue('bulan', $namaBulan);
-            $template->setValue('tahun', $report->tahun);
-            $template->setValue('tanggal_laporan', $tanggalLaporan->locale('id')->isoFormat('D MMMM Y'));
-
-            $template->setValue('nama_pegawai', $report->user->name);
-            $template->setValue('nik', $report->user->nik ?? '-');
-
-            $template->setValue('spk_nomor', $kontrak->spk_nomor ?? '-');
-            $template->setValue('spk_tanggal', $kontrak->spk_tanggal ? Carbon::parse($kontrak->spk_tanggal)->format('d F Y') : '-');
-            $template->setValue('spmk_nomor', $kontrak->spmk_nomor ?? '-');
-            $template->setValue('spmk_tanggal', $kontrak->spmk_tanggal ? Carbon::parse($kontrak->spmk_tanggal)->format('d F Y') : '-');
-            $template->setValue('jabatan', $kontrak->jabatan);
-            $template->setValue('nama_kontrak', $kontrak->nama_kontrak);
-
-            // --- JURUS BARU: Parsing Teks ke Array Block buat Numbering ---
-            $siapinListWord = function($teks, $variabelTeks) {
-                $baris = explode("\n", $teks ?? '-');
-                $hasil = [];
-
-                foreach ($baris as $b) {
-                    $bersih = trim($b);
-                    if (!empty($bersih)) {
-                        // Cerdas: Hapus angka "1. ", "2. " atau strip "- " dari ketikan Admin
-                        // Biar nggak bentrok/dobel sama auto-numbering dari Ms. Word
-                        $bersih = preg_replace('/^(\d+\.|\-)\s*/', '', $bersih);
-                        $hasil[] = [$variabelTeks => $bersih];
-                    }
-                }
-
-                // Kalau admin ngosongin isiannya
-                if (empty($hasil)) {
-                    $hasil[] = [$variabelTeks => '-'];
-                }
-
-                return $hasil;
-            };
-
-            // Lempar ke Word pakai cloneBlock (Bukan setComplexValue lagi)
-            // Format parameter: cloneBlock(nama_blok, jumlah_clone (0=otomatis), replace, indexVariables, array_data)
-            $template->cloneBlock('block_tujuan', 0, true, false, $siapinListWord($kontrak->tujuan, 'teks_tujuan'));
-            $template->cloneBlock('block_sasaran', 0, true, false, $siapinListWord($kontrak->sasaran, 'teks_sasaran'));
-            $template->cloneBlock('block_ruang_lingkup', 0, true, false, $siapinListWord($kontrak->ruang_lingkup, 'teks_ruang_lingkup'));
-
-
-            $approver = $kontrak->jobPackage ? $kontrak->jobPackage->approver : null;
-            $template->setValue('nama_pejabat', $approver ? $approver->nama : 'Belum Diset');
-            $template->setValue('nip_pejabat', $approver ? $approver->nip : '-');
-            $template->setValue('jabatan_pejabat', $approver ? $approver->jabatan : '-');
-
-            // --- PROSES TABEL TARGET & REALISASI ---
-            $scopes = $kontrak->jobPackage ? $kontrak->jobPackage->scopes : collect();
-            $jumlahScope = $scopes->count();
-
-            if ($jumlahScope > 0) {
-                $template->cloneRow('aktifitas', $jumlahScope);
-                $template->cloneRow('uraian_r', $jumlahScope);
-
-                foreach ($scopes as $index => $scope) {
-                    $rowNum = $index + 1;
-                    $template->setValue('aktifitas#' . $rowNum, $scope->kode_aktivitas);
-                    $template->setValue('uraian#' . $rowNum, $scope->uraian);
-                    $template->setValue('target#' . $rowNum, '100%');
-
-                    $jumlahDikerjakan = $report->dailyTasks->where('scope_id', $scope->id)->count();
-                    $capaianPersen = ($jumlahDikerjakan > 0) ? '100%' : '0%';
-
-                    $template->setValue('no_r#' . $rowNum, $rowNum);
-                    $template->setValue('uraian_r#' . $rowNum, $scope->uraian);
-                    $template->setValue('target_r#' . $rowNum, '100%');
-                    $template->setValue('jml_req#' . $rowNum, $jumlahDikerjakan);
-                    $template->setValue('jml_done#' . $rowNum, $jumlahDikerjakan);
-                    $template->setValue('capaian#' . $rowNum, $capaianPersen);
-                }
-            } else {
-                // (Isi dengan block else default seperti sebelumnya)
-                $template->setValue('aktifitas', '-'); $template->setValue('uraian', '-'); $template->setValue('target', '-');
-                $template->setValue('no_r', '-'); $template->setValue('uraian_r', '-'); $template->setValue('target_r', '-');
-                $template->setValue('jml_req', '0'); $template->setValue('jml_done', '0'); $template->setValue('capaian', '0%');
-            }
-
-            // --- PROSES TABEL KEGIATAN & LAMPIRAN FOTO ---
-            // (Kode ini sama persis dengan yang sebelumnya)
-            $tasks = $report->dailyTasks->sortBy('tanggal')->values();
-            $jumlahTask = $tasks->count();
-
-            if ($jumlahTask > 0) {
-                $template->cloneRow('hari', $jumlahTask);
-                $nomorGambar = 1;
-
-                foreach ($tasks as $index => $task) {
-                    $rowNum = $index + 1;
-                    $hari = Carbon::parse($task->tanggal)->locale('id')->isoFormat('dddd');
-                    $tanggal = Carbon::parse($task->tanggal)->format('d M Y');
-                    $keterangan = $task->scope ? $task->scope->kode_aktivitas : '-';
-                    $deskripsi = $task->deskripsi_pekerjaan;
-
-                    if (stripos($deskripsi, 'cuti') !== false || stripos($deskripsi, 'libur') !== false) {
-
-                        $textHari = new TextRun();
-                        $textTanggal = new TextRun();
-                        $textDeskripsi = new TextRun();
-
-                        $textHari->addText($hari, ['bold' => true, 'color' => 'FF0000']); // Warna merah
-                        $textTanggal->addText($tanggal, ['bold' => true, 'color' => 'FF0000']); // Warna merah
-                        $textDeskripsi->addText($deskripsi, ['bold' => true, 'color' => 'FF0000']); // Warna merah
-
-                        $template->setComplexValue('hari#' . $rowNum, $textHari);
-                        $template->setComplexValue('tanggal#' . $rowNum, $textTanggal);
-                        $template->setComplexValue('deskripsi#' . $rowNum, $textDeskripsi);
-                    } else {
-                        $template->setValue('hari#' . $rowNum, $hari);
-                        $template->setValue('tanggal#' . $rowNum, $tanggal);
-                        $template->setValue('deskripsi#' . $rowNum, $deskripsi);
-                    }
-
-                    $template->setValue('keterangan#' . $rowNum, $keterangan);
-
-                    $teksDokumentasi = [];
-                    foreach ($task->taskImages as $img) {
-                        $teksDokumentasi[] = "Gambar " . $nomorGambar;
-                        $nomorGambar++;
-                    }
-                    $template->setValue('dokumentasi#' . $rowNum, implode(', ', $teksDokumentasi));
-                }
-            } else {
-                $template->setValue('hari', '-'); $template->setValue('tanggal', '-');
-                $template->setValue('deskripsi', '-'); $template->setValue('keterangan', '-'); $template->setValue('dokumentasi', '-');
-            }
-
-            // PROSES LAMPIRAN FOTO
-            $semuaFoto = [];
-            $nomorGambarLampi = 1;
-            foreach ($tasks as $task) {
-                foreach ($task->taskImages as $img) {
-                    $path = storage_path('app/public/' . $img->image_path);
-                    if (file_exists($path)) {
-                        $semuaFoto[] = [
-                            'path' => $this->resizeImageForWord($path, $tempImageDir),
-                            'caption' => "Gambar {$nomorGambarLampi} " . $task->deskripsi_pekerjaan,
-                        ];
-                        $nomorGambarLampi++;
-                    }
-                }
-            }
-
-            $chunks = array_chunk($semuaFoto, 2);
-            $jumlahBarisFoto = count($chunks);
-
-            if ($jumlahBarisFoto > 0) {
-                $template->cloneRow('caption_1', $jumlahBarisFoto);
-                foreach ($chunks as $index => $chunk) {
-                    $rowNum = $index + 1;
-                    $template->setImageValue('foto_1#' . $rowNum, ['path' => $chunk[0]['path'], 'width' => 250, 'ratio' => true]);
-                    $template->setValue('caption_1#' . $rowNum, $chunk[0]['caption']);
-                    if (isset($chunk[1])) {
-                        $template->setImageValue('foto_2#' . $rowNum, ['path' => $chunk[1]['path'], 'width' => 250, 'ratio' => true]);
-                        $template->setValue('caption_2#' . $rowNum, $chunk[1]['caption']);
-                    } else {
-                        $template->setValue('foto_2#' . $rowNum, ''); $template->setValue('caption_2#' . $rowNum, '');
-                    }
-                }
-            } else {
-                $template->setValue('foto_1', ''); $template->setValue('caption_1', '-'); $template->setValue('foto_2', ''); $template->setValue('caption_2', '');
-            }
-
-            $fileName = "Laporan_Kinerja_{$namaBulan}_{$report->tahun}.docx";
-            $tempPath = storage_path('app/public/' . $fileName);
-            $template->saveAs($tempPath);
-
-            if ($tempImageDir && File::isDirectory($tempImageDir)) {
-                File::deleteDirectory($tempImageDir);
-            }
-
-            return response()->download($tempPath)->deleteFileAfterSend(true);
-
+            $filePath = $this->exportService->exportReportToWord($report);
+            return response()->download($filePath)->deleteFileAfterSend(true);
         } catch (\Throwable $e) {
-            if ($tempImageDir && File::isDirectory($tempImageDir)) {
-                File::deleteDirectory($tempImageDir);
-            }
-
             report($e);
 
             $message = config('app.debug')
-                ? $e->getMessage().' di baris '.$e->getLine()
+                ? $e->getMessage() . ' di baris ' . $e->getLine()
                 : 'Gagal mengekspor laporan Word. Silakan coba lagi.';
 
             return back()->with('error', $message);
         }
-    }
-
-    private function resizeImageForWord(string $path, ?string &$tempImageDir): string
-    {
-        if (!extension_loaded('gd')) {
-            return $path;
-        }
-
-        $imageInfo = @getimagesize($path);
-        if (!$imageInfo || empty($imageInfo['mime'])) {
-            return $path;
-        }
-
-        [$width, $height] = $imageInfo;
-        if ($width <= 0 || $height <= 0) {
-            return $path;
-        }
-
-        $source = $this->createImageResource($path, $imageInfo['mime']);
-        if (!$source) {
-            return $path;
-        }
-
-        if ($imageInfo['mime'] === 'image/jpeg') {
-            $source = $this->normalizeJpegOrientation($source, $path);
-            $width = imagesx($source);
-            $height = imagesy($source);
-        }
-
-        $maxWidth = 1000;
-        $maxHeight = 1000;
-        $scale = min($maxWidth / $width, $maxHeight / $height, 1);
-        $targetWidth = max(1, (int) round($width * $scale));
-        $targetHeight = max(1, (int) round($height * $scale));
-
-        $target = imagecreatetruecolor($targetWidth, $targetHeight);
-        if (!$target) {
-            imagedestroy($source);
-            return $path;
-        }
-
-        $white = imagecolorallocate($target, 255, 255, 255);
-        imagefill($target, 0, 0, $white);
-
-        imagecopyresampled(
-            $target,
-            $source,
-            0,
-            0,
-            0,
-            0,
-            $targetWidth,
-            $targetHeight,
-            $width,
-            $height
-        );
-
-        if (!$tempImageDir) {
-            $tempImageDir = storage_path('app/report-export-images/' . uniqid('report_', true));
-            File::ensureDirectoryExists($tempImageDir);
-        }
-
-        $targetPath = $tempImageDir . DIRECTORY_SEPARATOR . pathinfo($path, PATHINFO_FILENAME) . '_' . substr(sha1($path . microtime(true)), 0, 10) . '.jpg';
-        $saved = imagejpeg($target, $targetPath, 75);
-
-        imagedestroy($source);
-        imagedestroy($target);
-
-        return $saved ? $targetPath : $path;
-    }
-
-    private function createImageResource(string $path, string $mime): \GdImage|false
-    {
-        return match ($mime) {
-            'image/jpeg' => @imagecreatefromjpeg($path),
-            'image/png' => @imagecreatefrompng($path),
-            'image/gif' => @imagecreatefromgif($path),
-            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($path) : false,
-            default => false,
-        };
-    }
-
-    private function normalizeJpegOrientation(\GdImage $image, string $path): \GdImage
-    {
-        if (!function_exists('exif_read_data')) {
-            return $image;
-        }
-
-        $exif = @exif_read_data($path);
-        $orientation = $exif['Orientation'] ?? null;
-
-        $rotated = match ($orientation) {
-            3 => imagerotate($image, 180, 0),
-            6 => imagerotate($image, -90, 0),
-            8 => imagerotate($image, 90, 0),
-            default => false,
-        };
-
-        if (!$rotated) {
-            return $image;
-        }
-
-        imagedestroy($image);
-
-        return $rotated;
     }
 
     private function canViewAllReports($user): bool
